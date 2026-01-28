@@ -1,0 +1,147 @@
+openapi: 3.0.0
+info:
+  title: Item Service API
+  description: API de gestion du catalogue d'items pour le microservice Héros.
+  version: 1.0.0
+
+paths:
+  /items:
+    get:
+      tags: [Items]
+      summary: Liste tous les items
+      responses:
+        "200":
+          description: Liste des items récupérée
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ItemWithEffect"
+        "500":
+          $ref: "#/components/responses/Error500"
+    post:
+      tags: [Items]
+      summary: Ajoute un nouvel item au catalogue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemWithEffect"
+      responses:
+        "201":
+          description: Item créé
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemWithEffect"
+        "400":
+          $ref: "#/components/responses/Error400"
+
+  /items/{uuid}:
+    get:
+      tags: [Items]
+      summary: Récupère un item par son UUID
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Détails de l'item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemWithEffect"
+        "404":
+          $ref: "#/components/responses/Error404"
+
+components:
+  schemas:
+    ItemCategory:
+      type: object
+      required: [id, nom]
+      properties:
+        id:
+          type: integer
+        nom:
+          type: string
+          example: "Arme"
+
+    BaseItem:
+      type: object
+      required: [nom, rarete, type]
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        nom:
+          type: string
+          example: "Lame de l'Exilé"
+        rarete:
+          type: string
+          enum: [Commun, Rare, Epic, Legendaire]
+          default: Commun
+        type:
+          $ref: "#/components/schemas/ItemCategory"
+
+    ItemWithEffect:
+      allOf:
+        - $ref: "#/components/schemas/BaseItem"
+        - type: object
+          properties:
+            description:
+              type: string
+              example: "Une épée dont la lame semble palpiter de chaleur."
+            effets:
+              type: array
+              items:
+                $ref: "#/components/schemas/Effect"
+    
+    Effect:
+      type: object
+      required: [caracteristique, valeur]
+      properties:
+        caracteristique:
+          type: string
+          enum: [Force, Agilite, Intelligence, PointsDeVie]
+        valeur:
+          type: integer
+          example: 15
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        code:
+          type: integer
+
+  responses:
+    Error400:
+      description: Requête malformée
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Error404:
+      description: Item non trouvé
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Error500:
+      description: Erreur interne
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+tags:
+  - name: Items
+    description: Gestion du référentiel des objets
