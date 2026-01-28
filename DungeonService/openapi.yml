@@ -79,6 +79,7 @@ components:
       properties:
         id:
           type: string
+          format: uuid
           example: "a1b2c3d4-e5f6-7g8h-9i10-j11k12l13m14"
         name:
           type: string
@@ -98,6 +99,7 @@ components:
       properties:
         id:
           type: string
+          format: uuid
           example: "r1s2t3u4-v5w6-x7y8-9z10-a11b12c13d14"
         dimensions:
           $ref: '#/components/schemas/Dimension'
