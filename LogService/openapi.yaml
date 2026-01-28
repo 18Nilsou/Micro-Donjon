@@ -1,33 +1,122 @@
 openapi: 3.0.0
 info:
-  title: Log service API
-  description: Documentation Swagger pour l'API Log service.
-  version: 0.0.1
+  title: Log Service API
+  description: |
+    Service passif de logs pour le système Micro-Donjon.
+    
+    **ATTENTION**: Ce service est totalement passif pour l'écriture de logs.
+    - Il consomme automatiquement tous les messages du Message Broker (RabbitMQ)
+    - Il ne reçoit JAMAIS d'appels HTTP directs pour écrire des logs
+    - Les endpoints HTTP servent uniquement à CONSULTER les logs enregistrés
+    
+    Architecture:
+    - Stockage: PostgreSQL
+    - Message Broker: RabbitMQ (écoute sur exchange 'game_events')
+    - Modes: Consultation via HTTP, écriture via messages asynchrones
+  version: 1.0.0
 servers:
   - url: http://localhost:3005
 
 paths:
   /logs:
     get:
-      summary: Get logs
+      summary: Consulter les logs (LECTURE SEULE)
+      description: |
+        Récupère une liste filtrée et paginée des logs.
+        Les logs sont automatiquement créés via la consommation des messages RabbitMQ.
       tags:
-        - Logs
+        - Consultation Logs
+      parameters:
+        - name: page
+          in: query
+          description: Numéro de page
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          description: Nombre de logs par page
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+        - name: service
+          in: query
+          description: Filtrer par service
+          schema:
+            type: string
+            enum: [HERO_SERVICE, GAME_SERVICE, DUNGEON_SERVICE, ITEM_SERVICE, MOB_SERVICE]
+        - name: level
+          in: query
+          description: Filtrer par niveau de log
+          schema:
+            type: string
+            enum: [DEBUG, INFO, WARN, ERROR, FATAL]
+        - name: from
+          in: query
+          description: Date de début (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Date de fin (ISO 8601)
+          schema:
+            type: string
+            format: date-time
       responses:
-              '200':
-                description: Ok
-                content:
-                  application/json:
-                    schema:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/Log'
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
-    post:
-      summary: Create a new log
+        '200':
+          description: Liste des logs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Log'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: Paramètres de requête invalides
+        '500':
+          description: Erreur interne du serveur
+
+  /logs/stats:
+    get:
+      summary: Statistiques des logs (LECTURE SEULE)
+      description: |
+        Récupère les statistiques des logs des dernières 24h groupées par service et niveau.
       tags:
+        - Statistiques
+      responses:
+        '200':
+          description: Statistiques des logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LogStats'
+        '500':
+          description: Erreur interne du serveur
+
+  /health:
+    get:
+      summary: Vérification de l'état du service
+      description: |
+        Vérifie l'état de santé du service de logs, incluant la connexion RabbitMQ.
+      tags:
+        - Santé
+      responses:
+        '200':
+          description: Service en bonne santé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
         - Logs
       requestBody:
         required: true
@@ -91,3 +180,90 @@ components:
           type: string
         message:
           type: string
+
+components:
+  schemas:
+    Log:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Identifiant unique du log
+        timestamp:
+          type: string
+          format: date-time
+          description: Horodatage de l'événement
+        service:
+          type: string
+          description: Service source de l'événement
+          enum: [HERO_SERVICE, GAME_SERVICE, DUNGEON_SERVICE, ITEM_SERVICE, MOB_SERVICE, AUTH_SERVICE]
+        action:
+          type: string
+          description: Action effectuée
+          example: "HERO_CREATED"
+        message:
+          type: string
+          description: Message descriptif de l'événement
+        level:
+          type: string
+          description: Niveau de gravité
+          enum: [DEBUG, INFO, WARN, ERROR, FATAL]
+          default: INFO
+        user_id:
+          type: string
+          description: Identifiant de l'utilisateur (si applicable)
+          nullable: true
+        session_id:
+          type: string
+          description: Identifiant de session (si applicable)
+          nullable: true
+        metadata:
+          type: object
+          description: Métadonnées additionnelles en JSON
+          nullable: true
+
+    LogStats:
+      type: object
+      properties:
+        service:
+          type: string
+          description: Nom du service
+        level:
+          type: string
+          description: Niveau de log
+        count:
+          type: integer
+          description: Nombre d'événements
+        last_event:
+          type: string
+          format: date-time
+          description: Timestamp du dernier événement
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Page actuelle
+        limit:
+          type: integer
+          description: Nombre d'éléments par page
+        total:
+          type: integer
+          description: Nombre total d'éléments retournés
+
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+        service:
+          type: string
+          example: "log-service"
+        timestamp:
+          type: string
+          format: date-time
+        rabbitmq_connected:
+          type: boolean
+          description: État de la connexion RabbitMQ
