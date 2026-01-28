@@ -1,0 +1,78 @@
+openapi: 3.0.0
+info:
+  title: Game Engine API
+  description: Service de gestion de la logique de jeu, des déplacements et des combats.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+    description: Serveur local du Game Engine
+
+paths:
+  /game:
+    post:
+      summary: Démarrer une nouvelle partie
+      tags:
+        - Game
+    put:
+      summary: Mettre à jour l'état de la partie
+      tags:
+        - Game
+    get:
+      summary: Récupérer l'état actuel de la partie
+      tags:
+        - Game
+    delete:
+      summary: Terminer la partie en cours
+      tags:
+        - Game
+  /hero/{heroId}/move:
+    put:
+      summary: Déplacer un héros à une nouvelle position
+      tags:
+        - Hero
+  /fight:
+    post:
+      summary: Initier un combat entre héros et ennemis
+      tags:
+        - Fight
+    put:
+      summary: Mettre à jour l'état du combat
+      tags:
+        - Fight
+    get:
+      summary: Récupérer l'état actuel du combat
+      tags:
+        - Fight
+    delete:
+      summary: Terminer le combat en cours
+      tags:
+        - Fight
+  /dungeon:
+    post:
+      summary: Créer un nouveau donjon
+      tags:
+        - Dungeon
+    get:
+      summary: Récupérer l'état actuel du donjon
+      tags:
+        - Dungeon
+  /mob:
+    post:
+      summary: Ajouter un nouveau mob au donjon
+      tags:
+        - Dungeon
+    delete:
+      summary: Supprimer un mob du donjon
+      tags:
+        - Dungeon
+
+components:
+  schemas:
+    Game:
+    Hero:
+    Mob:
+    Dungeon:
+    Fight:
+    Item:
+
