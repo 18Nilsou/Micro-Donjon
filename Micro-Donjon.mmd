@@ -1,0 +1,43 @@
+---
+config:
+  theme: neutral
+  look: classic
+  layout: elk
+---
+flowchart TB
+ subgraph subGraph0["Logic Services"]
+        HeroSvc["Hero Service"]
+        Gateway["API Gateway : Express"]
+        Engine["Game Engine"]
+        DungeonSvc["Dungeon Service"]
+  end
+ subgraph subGraph1["Data Services"]
+        ItemSvc["Item Service"]
+        MobSvc["Mob Service"]
+  end
+ subgraph Persistence["Persistence"]
+        HeroDB[("Hero JSON")]
+        HeroCache[("Hero Cache")]
+        LogDB[("Log DB")]
+        LogSvc["Log Service"]
+        ItemDB[("Item DB")]
+        MobData[("Mobs : JSON Config")]
+        DunCache[("Dungeon Cache")]
+        EngineCache[("Game State Cache")]
+  end
+    User(("Utilisateur")) --> Front["Front-end : Navigateur"]
+    Front --> Gateway
+    Gateway --> HeroSvc & Engine & DungeonSvc & ItemSvc
+    Engine --> MobSvc & EngineCache
+    Engine -.-> Broker{"Message Broker"}
+    Broker -.-> HeroSvc & LogSvc
+    HeroSvc --> HeroDB & HeroCache
+    LogSvc --> LogDB
+    ItemSvc --> ItemDB
+    MobSvc --> MobData
+    DungeonSvc --> DunCache
+
+    style Gateway fill:#f96,stroke:#333,stroke-width:2px
+    style Engine fill:#dfd,stroke:#333
+    style LogSvc fill:#eee,stroke:#333
+    style Broker fill:#bbf,stroke:#333,stroke-dasharray: 5 5
