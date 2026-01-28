@@ -1,0 +1,160 @@
+version: '3.8'
+
+services:
+  
+  # Message Broker (RabbitMQ) - Pour le service de Log (Pub/Sub)
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # Port AMQP
+      - "15672:15672" # Interface Management (login: guest/guest)
+    networks:
+      - game-network
+
+  # --- DONNÉES ---
+
+  # Cache 1: Données temporaires du Jeu (Game Engine)
+  redis-game:
+    image: redis:alpine
+    container_name: redis-game
+    ports:
+      - "6379:6379"
+    networks:
+      - game-network
+
+  # Cache 2: Données temporaires du Héros (Hero Service)
+  redis-hero:
+    image: redis:alpine
+    container_name: redis-hero
+    ports:
+      - "6380:6379" # Port externe 6380 pour éviter le conflit avec le premier
+    networks:
+      - game-network
+
+  # Cache 3: Données temporaires du Donjon (Dungeon Service)
+  redis-dungeon:
+    image: redis:alpine
+    container_name: redis-dungeon
+    ports:
+      - "6381:6379" # Port externe 6381 pour éviter le conflit avec les autres
+    networks:
+      - game-network
+
+  # Base de Données pour les Items (Relationnelle pour gestion structurée)
+  postgres-items:
+    image: postgres:alpine
+    container_name: postgres-items
+    environment:
+      POSTGRES_DB: items_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    networks:
+      - game-network
+
+  # Database pour les Logs (Relationnelle car structurée chronologiquement)
+  postgres-log:
+    image: postgres:alpine
+    container_name: postgres-log
+    environment:
+      POSTGRES_DB: log_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432"
+    networks:
+      - game-network
+
+  # --- MICRO-SERVICES ---
+
+  gateway:
+    build: ./Gateway
+    container_name: gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - HERO_SERVICE_URL=http://hero-service:3002
+      - ENGINE_SERVICE_URL=http://game-engine:3001
+      - DUNGEON_SERVICE_URL=http://dungeon-service:3003
+    networks:
+      - game-network
+
+  game-engine:
+    build: ./GameEngine
+    container_name: game-engine
+    ports:
+      - "3001:3001"
+    environment:
+      - REDIS_HOST=redis-game
+      - RABBITMQ_URL=amqp://rabbitmq
+      - HERO_SERVICE_URL=http://hero-service:3002
+      - MOB_SERVICE_URL=http://mob-service:3006
+    depends_on:
+      - redis-game
+      - rabbitmq
+    networks:
+      - game-network
+
+  hero-service:
+    build: ./HeroService
+    container_name: hero-service
+    ports:
+      - "3002:3002"
+    environment:
+      - REDIS_HOST=redis-hero
+    depends_on:
+      - redis-hero
+    networks:
+      - game-network
+
+  dungeon-service:
+    build: ./DungeonService
+    container_name: dungeon-service
+    ports:
+      - "3003:3003"
+    depends_on:
+      - redis-dungeon
+    environment:
+      - REDIS_HOST=redis-dungeon
+    networks:
+      - game-network
+
+  item-service:
+    build: ./ItemService
+    container_name: item-service
+    ports:
+      - "3004:3004"
+    environment:
+      - DB_URL=postgres://user:password@postgres-items:5432/items_db
+    depends_on:
+      - postgres-items
+    networks:
+      - game-network
+
+  log-service:
+    build: ./LogService
+    container_name: log-service
+    ports:
+      - "3005:3005"
+    environment:
+      - DB_URL=postgres://user:password@postgres-log:5432/log_db
+      - RABBITMQ_URL=amqp://rabbitmq
+    depends_on:
+      - postgres-log
+      - rabbitmq
+    networks:
+      - game-network
+
+  mob-service:
+    build: ./MobService
+    container_name: mob-service
+    ports:
+      - "3006:3006"
+    networks:
+      - game-network
+
+networks:
+  game-network:
+    driver: bridge
