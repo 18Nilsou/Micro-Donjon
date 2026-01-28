@@ -11,7 +11,7 @@ info:
     
     Architecture:
     - Stockage: PostgreSQL
-    - Message Broker: RabbitMQ (écoute sur exchange 'game_events')
+    - Message Broker: RabbitMQ
     - Modes: Consultation via HTTP, écriture via messages asynchrones
   version: 1.0.0
 servers:
@@ -103,83 +103,39 @@ paths:
         '500':
           description: Erreur interne du serveur
 
-  /health:
+  /logs/hero/{heroId}:
     get:
-      summary: Vérification de l'état du service
+      summary: Consulter les logs d'un héros spécifique
       description: |
-        Vérifie l'état de santé du service de logs, incluant la connexion RabbitMQ.
+        Récupère tous les logs liés à un héros particulier en filtrant sur les métadonnées.
       tags:
-        - Santé
-      responses:
-        '200':
-          description: Service en bonne santé
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthStatus'
-        - Logs
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Log'
-      responses:
-              '201':
-                description: Created
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Log'
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
-  /logs/hero/{heroid}:
-    get:
-      summary: Get logs by hero id
-      tags:
-        - Logs
+        - Consultation Logs
       parameters:
         - in: path
-          name: heroid
+          name: heroId
           schema:
-            type: integer
+            type: string
           required: true
-          description: The hero id
+          description: Identifiant du héros
       responses:
         '200':
-          description: Ok
+          description: Liste des logs du héros
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Log'
+                type: object
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Log'
+                  count:
+                    type: integer
+                    description: Nombre total de logs pour ce héros
         '400':
-          description: Bad Request
+          description: Identifiant invalide
         '500':
-          description: Internal Server Error 
-
-components:
-  schemas:
-    Log:
-      type: object
-      required:
-        - id
-        - date
-        - entity
-        - message
-      properties:
-        id:
-          type: integer
-        date:
-          type: string
-          format: date-time
-        entity:
-          type: string
-        message:
-          type: string
+          description: Erreur interne du serveur
 
 components:
   schemas:

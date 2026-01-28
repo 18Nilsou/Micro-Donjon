@@ -200,6 +200,39 @@ app.get('/logs/stats', async (req, res) => {
   }
 });
 
+app.get('/logs/hero/:heroId', async (req, res) => {
+  try {
+    const { heroId } = req.params;
+    
+    if (!heroId) {
+      return res.status(400).json({ error: 'Hero ID is required' });
+    }
+    
+    // Recherche dans les métadonnées JSON et dans user_id
+    const query = `
+      SELECT * FROM logs 
+      WHERE user_id = $1 
+         OR metadata @> $2
+         OR metadata->>'heroId' = $1
+         OR metadata->>'hero_id' = $1
+      ORDER BY timestamp DESC
+    `;
+    
+    const result = await pool.query(query, [
+      heroId,
+      JSON.stringify({ heroId })
+    ]);
+    
+    res.json({
+      logs: result.rows,
+      count: result.rows.length
+    });
+  } catch (error) {
+    console.error('Error fetching hero logs:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',

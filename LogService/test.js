@@ -3,7 +3,7 @@ const LogPublisher = require('./logPublisher');
 async function testLogService() {
   console.log('Test du Log Service...');
   
-  const publisher = new LogPublisher('amqp://rabbitmq:5672');
+  const publisher = new LogPublisher('amqp://localhost:5672');
   
   try {
     await publisher.connect();
@@ -48,6 +48,7 @@ async function testLogService() {
     console.log('Vérifiez les logs en visitant:');
     console.log('   - http://localhost:3005/logs');
     console.log('   - http://localhost:3005/logs/stats');
+    console.log('   - http://localhost:3005/logs/hero/hero123');
     
   } catch (error) {
     console.error('Erreur lors du test:', error);
