@@ -1,0 +1,24 @@
+{
+  "name": "item-service",
+  "version": "1.0.0",
+  "description": "Service de gestion du catalogue d'items pour Micro-Donjon",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "seed": "bun run src/db/seed.ts"
+  },
+  "dependencies": {
+    "@hono/swagger-ui": "^0.5.3",
+    "@hono/zod-validator": "^0.4.1",
+    "hono": "^4.7.6",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

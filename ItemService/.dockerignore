@@ -1,0 +1,41 @@
+# Dépendances
+node_modules/
+bun.lockb
+
+# Données locales
+data/
+test-data/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Tests
+tests/
+*.test.ts
+
+# Documentation
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Git
+.git/
+.gitignore
+
+# Environnement
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+coverage/
