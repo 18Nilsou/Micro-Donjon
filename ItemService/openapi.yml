@@ -3,7 +3,8 @@ info:
   title: Item Service API
   description: API de gestion du catalogue d'items pour le microservice Héros.
   version: 1.0.0
-
+servers:
+  - url: http://localhost:3004
 paths:
   /items:
     get:
