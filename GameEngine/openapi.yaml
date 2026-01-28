@@ -46,6 +46,28 @@ paths:
       summary: Terminer la partie en cours
       tags:
         - Game
+  /game/start:
+    post:
+      summary: Cet endpoint doit prendre un heroId et un dungeonId. Il va chercher les stats du héros, générer/charger le donjon, et initialiser le cache redis-game
+      tags:
+        - Game
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                heroId:
+                  type: integer
+                dungeonId:  
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Created
+        '500':
+          description: Internal Server Error
   /hero/{heroId}/move:
     put:
       summary: Déplacer un héros à une nouvelle position
