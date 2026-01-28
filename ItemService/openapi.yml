@@ -6,10 +6,123 @@ info:
 servers:
   - url: http://localhost:3004
 paths:
-  /items:
+  /api/items/types:
     get:
-      tags: [Items]
-      summary: Liste tous les items
+      summary: Récupérer tous les types d'items
+      tags:
+        - Item Types
+      responses:
+        '200':
+          description: Liste des types d'items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemType'
+        '500':
+          $ref: "#/components/responses/Error500"
+
+    post:
+      summary: Créer un nouveau type d'item
+      tags:
+        - Item Types
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemTypeCreate'
+      responses:
+        '201':
+          description: Type d'item créé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemType'
+        '400':
+          $ref: "#/components/responses/Error400"
+        '500':
+          $ref: "#/components/responses/Error500"
+
+  /api/items/types/{uuid}:
+    get:
+      summary: Récupérer un type d'item par son UUID
+      tags:
+        - Item Types
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Détails du type d'item
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemType'
+        '404':
+          $ref: "#/components/responses/Error404"
+        '500':
+          $ref: "#/components/responses/Error500"
+
+    put:
+      summary: Mettre à jour un type d'item
+      tags:
+        - Item Types
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemTypeUpdate'
+      responses:
+        '200':
+          description: Type d'item mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemType'
+        '400':
+          $ref: "#/components/responses/Error400"
+        '404':
+          $ref: "#/components/responses/Error404"
+        '500':
+          $ref: "#/components/responses/Error500"
+
+    delete:
+      summary: Supprimer un type d'item
+      tags:
+        - Item Types
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Type d'item supprimé avec succès
+        '404':
+          $ref: "#/components/responses/Error404"
+        '500':
+          $ref: "#/components/responses/Error500"
+
+  /api/items:
+    get:
+      tags: [Item Instances]
+      summary: Liste tous les items générés
       responses:
         "200":
           description: Liste des items récupérée
@@ -18,31 +131,13 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ItemWithEffect"
+                  $ref: "#/components/schemas/Item"
         "500":
           $ref: "#/components/responses/Error500"
-    post:
-      tags: [Items]
-      summary: Ajoute un nouvel item au catalogue
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ItemWithEffect"
-      responses:
-        "201":
-          description: Item créé
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ItemWithEffect"
-        "400":
-          $ref: "#/components/responses/Error400"
 
-  /items/{uuid}:
+  /api/items/{uuid}:
     get:
-      tags: [Items]
+      tags: [Item Instances]
       summary: Récupère un item par son UUID
       parameters:
         - name: uuid
@@ -57,18 +152,57 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ItemWithEffect"
+                $ref: "#/components/schemas/Item"
         "404":
           $ref: "#/components/responses/Error404"
+        "500":
+          $ref: "#/components/responses/Error500"
+
+  /api/items/generate:
+    post:
+      summary: Générer un item aléatoire
+      tags:
+        - Item Instances
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rarity:
+                  type: string
+                  enum: [Commun, Rare, Epic, Legendaire]
+                itemTypeUuid:
+                  type: string
+                  format: uuid
+                position:
+                  $ref: '#/components/schemas/Position'
+                roomId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Item généré avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+        '400':
+          $ref: "#/components/responses/Error400"
+        '500':
+          $ref: "#/components/responses/Error500"
 
 components:
   schemas:
     ItemCategory:
       type: object
-      required: [id, nom]
+      required: [uuid, nom]
       properties:
-        id:
-          type: integer
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
         nom:
           type: string
           example: "Arme"
@@ -104,6 +238,108 @@ components:
               items:
                 $ref: "#/components/schemas/Effect"
     
+    ItemType:
+      type: object
+      required: [uuid, nom, categorie]
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        nom:
+          type: string
+          example: "Épée Longue"
+        description:
+          type: string
+          example: "Une arme à deux mains puissante"
+        categorie:
+          $ref: "#/components/schemas/ItemCategory"
+        effets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Effect"
+        rarete:
+          type: string
+          enum: [Commun, Rare, Epic, Legendaire]
+          default: Commun
+
+    ItemTypeCreate:
+      type: object
+      required: [nom, categorieUuid]
+      properties:
+        nom:
+          type: string
+          example: "Épée Longue"
+        description:
+          type: string
+          example: "Une arme à deux mains puissante"
+        categorieUuid:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        effets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Effect"
+        rarete:
+          type: string
+          enum: [Commun, Rare, Epic, Legendaire]
+          default: Commun
+
+    ItemTypeUpdate:
+      type: object
+      properties:
+        nom:
+          type: string
+          example: "Épée Longue"
+        description:
+          type: string
+          example: "Une arme à deux mains puissante"
+        categorieUuid:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        effets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Effect"
+        rarete:
+          type: string
+          enum: [Commun, Rare, Epic, Legendaire]
+
+    Item:
+      type: object
+      required: [uuid, itemType]
+      properties:
+        uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        itemType:
+          $ref: "#/components/schemas/ItemType"
+        position:
+          $ref: "#/components/schemas/Position"
+        roomId:
+          type: string
+          format: uuid
+        rarete:
+          type: string
+          enum: [Commun, Rare, Epic, Legendaire]
+          default: Commun
+    
+    Position:
+      type: object
+      required: [x, y]
+      properties:
+        x:
+          type: number
+          format: float
+          example: 10.5
+        y:
+          type: number
+          format: float
+          example: 20.3
+
     Effect:
       type: object
       required: [caracteristique, valeur]
@@ -144,5 +380,7 @@ components:
             $ref: "#/components/schemas/Error"
 
 tags:
-  - name: Items
-    description: Gestion du référentiel des objets
+  - name: Item Types
+    description: Gestion des types d'items (catalogue)
+  - name: Item Instances
+    description: Gestion des instances d'items générées
