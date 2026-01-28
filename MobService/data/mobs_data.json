@@ -1,0 +1,26 @@
+[
+    {
+        "name": "Lenny Spider",
+        "hp": 100,
+        "attack": 15,
+        "type": "Common"
+    },
+    {
+        "name": "Dieg'Art",
+        "hp": 80,
+        "attack": 10,
+        "type": "Common"
+    },
+    {
+        "name": "Orc",
+        "hp": 150,
+        "attack": 25,
+        "type": "Common"
+    },
+    {
+        "name": "Lacaca, Eater of Pizza",
+        "hp": 2000,
+        "attack": 50,
+        "type": "Boss"
+    }
+]
