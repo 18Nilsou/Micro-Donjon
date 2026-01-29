@@ -1,13 +1,19 @@
-FROM node:20-alpine
+FROM oven/bun:1 AS base
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
+COPY package.json bun.lockb* ./
 
-RUN npm install
+RUN bun install --frozen-lockfile
 
 COPY . .
 
-EXPOSE 3000
+RUN mkdir -p data
 
-CMD [ "node", "index.js" ]
+RUN bun run seed
+
+EXPOSE 3004
+
+ENV PORT=3004
+
+CMD ["bun", "run", "src/index.ts"]
