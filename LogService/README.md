@@ -21,15 +21,15 @@ Le Log Service est un service **totalement passif** qui enregistre chronologique
 
 ## Fonctionnalités
 
-### ✅ Écriture Automatique (Passive)
+### Écriture Automatique (Passive)
 - Écoute en continu les messages RabbitMQ
 - Sauvegarde automatique en PostgreSQL
 - Aucune API HTTP d'écriture
 
-### ✅ Consultation (HTTP)
+### Consultation (HTTP)
 - `GET /logs` : Liste filtrée et paginée des logs
 - `GET /logs/stats` : Statistiques des dernières 24h
-- `GET /health` : État de santé du service
+- `GET /logs/hero/{heroId}` : Liste des logs d'un héros spécifique
 
 ## Installation
 

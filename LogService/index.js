@@ -83,7 +83,7 @@ async function connectToRabbitMQ() {
           channel.ack(msg);
         } catch (error) {
           console.error('Error processing message:', error);
-          channel.nack(msg, false, false); // Rejeter le message sans le remettre en queue
+          channel.nack(msg, false, false);
         }
       }
     }, { noAck: false });
@@ -167,8 +167,8 @@ app.get('/logs', async (req, res) => {
     res.json({
       logs: result.rows,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: Number.parseInt(page),
+        limit: Number.parseInt(limit),
         total: result.rows.length
       }
     });
@@ -208,7 +208,7 @@ app.get('/logs/hero/:heroId', async (req, res) => {
       return res.status(400).json({ error: 'Hero ID is required' });
     }
     
-    // Recherche dans les métadonnées JSON et dans user_id
+    // Recherche dans JSON et dans user_id
     const query = `
       SELECT * FROM logs 
       WHERE user_id = $1 
@@ -231,15 +231,6 @@ app.get('/logs/hero/:heroId', async (req, res) => {
     console.error('Error fetching hero logs:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-});
-
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    service: 'log-service',
-    timestamp: new Date().toISOString(),
-    rabbitmq_connected: channel !== null
-  });
 });
 
 async function startService() {

@@ -19,7 +19,6 @@ class LogPublisher {
     }
   }
 
-
   async publishLog(routingKey, logData) {
     if (!this.channel) {
       await this.connect();
@@ -47,7 +46,7 @@ class LogPublisher {
 
   async logGameEvent(action, gameData, userId = null, sessionId = null) {
     await this.publishLog('game.' + action.toLowerCase(), {
-      service: 'GAME_SERVICE', 
+      service: 'GAME_ENGINE', 
       action: action,
       message: `Game event: ${action}`,
       level: 'INFO',

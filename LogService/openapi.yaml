@@ -20,7 +20,7 @@ servers:
 paths:
   /logs:
     get:
-      summary: Consulter les logs (LECTURE SEULE)
+      summary: Consulter les logs
       description: |
         Récupère une liste filtrée et paginée des logs.
         Les logs sont automatiquement créés via la consommation des messages RabbitMQ.
@@ -86,7 +86,7 @@ paths:
 
   /logs/stats:
     get:
-      summary: Statistiques des logs (LECTURE SEULE)
+      summary: Statistiques des logs
       description: |
         Récupère les statistiques des logs des dernières 24h groupées par service et niveau.
       tags:
