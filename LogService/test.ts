@@ -3,7 +3,7 @@ const LogPublisher = require('./logPublisher');
 async function testLogService() {
   console.log('Test du Log Service...');
   
-  const publisher = new LogPublisher('amqp://localhost:5672');
+  const publisher = new LogPublisher('amqp://rabbitmq:5672');
   
   try {
     await publisher.connect();

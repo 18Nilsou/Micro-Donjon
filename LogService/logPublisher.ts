@@ -1,6 +1,11 @@
 const amqp = require('amqplib');
 
-class LogPublisher {
+export class LogPublisher {
+
+  rabbitmqUrl: string;
+  channel: any;
+  exchangeName: string
+
   constructor(rabbitmqUrl = 'amqp://rabbitmq:5672') {
     this.rabbitmqUrl = rabbitmqUrl;
     this.channel = null;
@@ -19,7 +24,7 @@ class LogPublisher {
     }
   }
 
-  async publishLog(routingKey, logData) {
+  async publishLog(routingKey: string, logData: any) {
     if (!this.channel) {
       await this.connect();
     }
@@ -32,7 +37,7 @@ class LogPublisher {
     }
   }
 
-  async logHeroEvent(action, heroData, userId = null, sessionId = null) {
+  async logHeroEvent(action: string, heroData: any, userId: string | null = null, sessionId: string | null = null) {
     await this.publishLog('hero.' + action.toLowerCase(), {
       service: 'HERO_SERVICE',
       action: action,
@@ -44,7 +49,7 @@ class LogPublisher {
     });
   }
 
-  async logGameEvent(action, gameData, userId = null, sessionId = null) {
+  async logGameEvent(action: string, gameData: any, userId: string | null = null, sessionId: string | null = null) {
     await this.publishLog('game.' + action.toLowerCase(), {
       service: 'GAME_ENGINE', 
       action: action,
@@ -56,7 +61,7 @@ class LogPublisher {
     });
   }
 
-  async logDungeonEvent(action, dungeonData, userId = null, sessionId = null) {
+  async logDungeonEvent(action: string, dungeonData: any, userId: string | null = null, sessionId: string | null = null) {
     await this.publishLog('dungeon.' + action.toLowerCase(), {
       service: 'DUNGEON_SERVICE',
       action: action,
@@ -68,7 +73,7 @@ class LogPublisher {
     });
   }
 
-  async logItemEvent(action, itemData, userId = null, sessionId = null) {
+  async logItemEvent(action: string, itemData: any, userId: string | null = null, sessionId: string | null = null) {
     await this.publishLog('item.' + action.toLowerCase(), {
       service: 'ITEM_SERVICE',
       action: action,
@@ -80,7 +85,7 @@ class LogPublisher {
     });
   }
 
-  async logMobEvent(action, mobData, userId = null, sessionId = null) {
+  async logMobEvent(action: string, mobData: any, userId: string | null = null, sessionId: string | null = null) {
     await this.publishLog('mob.' + action.toLowerCase(), {
       service: 'MOB_SERVICE',
       action: action,
@@ -92,7 +97,7 @@ class LogPublisher {
     });
   }
 
-  async logError(service, error, context = {}, userId = null, sessionId = null) {
+  async logError(service: string, error: any, context: any = {}, userId: string | null = null, sessionId: string | null = null) {
     await this.publishLog('error.' + service.toLowerCase(), {
       service: service.toUpperCase() + '_SERVICE',
       action: 'ERROR_OCCURRED',
@@ -113,5 +118,3 @@ class LogPublisher {
     }
   }
 }
-
-module.exports = LogPublisher;

@@ -1,23 +1,23 @@
-const express = require('express');
-const cors = require('cors');
-const { Pool } = require('pg');
-const amqp = require('amqplib');
 
-const app = express();
-const port = process.env.PORT || 3005;
+import express, { Request, Response } from 'express';
+import cors from 'cors';
+import { Pool, PoolClient, QueryResult } from 'pg';
+import amqp, { Channel, Connection, Message } from 'amqplib';
+
+const app: express.Application = express();
+const port: number = Number(process.env.PORT) || 3005;
 
 app.use(cors());
 app.use(express.json());
 
-const pool = new Pool({
+const pool: Pool = new Pool({
   connectionString: process.env.DB_URL || 'postgres://user:password@postgres-log:5432/log_db',
 });
 
-const rabbitmqUrl = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
+const rabbitmqUrl: string = process.env.RABBITMQ_URL || 'amqp://rabbitmq';
+let channel: Channel | null = null;
 
-let channel = null;
-
-async function retryWithBackoff(fn, maxRetries = 10, initialDelay = 1000) {
+async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries: number = 10, initialDelay: number = 1000): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
@@ -31,9 +31,10 @@ async function retryWithBackoff(fn, maxRetries = 10, initialDelay = 1000) {
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
+  throw new Error('Max retries exceeded');
 }
 
-async function initDatabase() {
+async function initDatabase(): Promise<void> {
   await retryWithBackoff(async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS logs (
@@ -52,38 +53,38 @@ async function initDatabase() {
   });
 }
 
-async function connectToRabbitMQ() {
+async function connectToRabbitMQ(): Promise<void> {
   await retryWithBackoff(async () => {
-    const connection = await amqp.connect(rabbitmqUrl);
+    
+    const connection: Connection = await amqp.connect(rabbitmqUrl);
+    
     channel = await connection.createChannel();
-    
     await channel.assertExchange('game_events', 'topic', { durable: true });
-    
     const queue = await channel.assertQueue('logs_queue', { durable: true });
     
-    const routingKeys = [
+    const routingKeys: string[] = [
       'hero.*',
-      'game.*', 
+      'game.*',
       'dungeon.*',
       'item.*',
       'mob.*',
       'auth.*',
       'error.*'
     ];
-    
+
     for (const routingKey of routingKeys) {
       await channel.bindQueue(queue.queue, 'game_events', routingKey);
     }
-    
-    await channel.consume(queue.queue, async (msg) => {
+
+    await channel.consume(queue.queue, async (msg: Message | null) => {
       if (msg) {
         try {
           const content = JSON.parse(msg.content.toString());
           await saveLog(content, msg.fields.routingKey);
-          channel.ack(msg);
+          channel!.ack(msg);
         } catch (error) {
           console.error('Error processing message:', error);
-          channel.nack(msg, false, false);
+          channel!.nack(msg, false, false);
         }
       }
     }, { noAck: false });
@@ -92,7 +93,17 @@ async function connectToRabbitMQ() {
   });
 }
 
-async function saveLog(eventData, routingKey) {
+interface LogEventData {
+  service?: string;
+  action?: string;
+  message?: string;
+  level?: string;
+  userId?: string;
+  sessionId?: string;
+  metadata?: any;
+}
+
+async function saveLog(eventData: LogEventData, routingKey: string): Promise<void> {
   try {
     const {
       service,
@@ -104,71 +115,64 @@ async function saveLog(eventData, routingKey) {
       metadata
     } = eventData;
 
-    await pool.query(`
-      INSERT INTO logs (service, action, message, level, user_id, session_id, metadata)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `, [
-      service || extractServiceFromRoutingKey(routingKey),
-      action || 'EVENT_RECEIVED',
-      message || JSON.stringify(eventData),
-      level,
-      userId,
-      sessionId,
-      metadata ? JSON.stringify(metadata) : null
-    ]);
-
+    await pool.query(
+      `INSERT INTO logs (service, action, message, level, user_id, session_id, metadata)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        service || extractServiceFromRoutingKey(routingKey),
+        action || 'EVENT_RECEIVED',
+        message || JSON.stringify(eventData),
+        level,
+        userId,
+        sessionId,
+        metadata ? JSON.stringify(metadata) : null
+      ]
+    );
     console.log(`Log saved: ${service || routingKey} - ${action || 'EVENT'}`);
   } catch (error) {
     console.error('Error saving log:', error);
   }
 }
 
-function extractServiceFromRoutingKey(routingKey) {
+function extractServiceFromRoutingKey(routingKey: string): string {
   return routingKey.split('.')[0].toUpperCase() + '_SERVICE';
 }
 
-app.get('/logs', async (req, res) => {
+app.get('/logs', async (req: Request, res: Response) => {
   try {
-    const { page = 1, limit = 100, service, level, from, to } = req.query;
-    const offset = (page - 1) * limit;
-    
+    const { page = 1, limit = 100, service, level, from, to } = req.query as Record<string, any>;
+    const offset: number = (Number(page) - 1) * Number(limit);
     let query = 'SELECT * FROM logs WHERE 1=1';
-    let params = [];
+    const params: any[] = [];
     let paramIndex = 1;
-    
     if (service) {
       query += ` AND service = $${paramIndex}`;
       params.push(service);
       paramIndex++;
     }
-    
     if (level) {
       query += ` AND level = $${paramIndex}`;
       params.push(level);
       paramIndex++;
     }
-    
     if (from) {
       query += ` AND timestamp >= $${paramIndex}`;
       params.push(from);
       paramIndex++;
     }
-    
     if (to) {
       query += ` AND timestamp <= $${paramIndex}`;
       params.push(to);
       paramIndex++;
     }
-    
     query += ` ORDER BY timestamp DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
-    
-    const result = await pool.query(query, params);
+    params.push(Number(limit), offset);
+    const result: QueryResult = await pool.query(query, params);
     res.json({
       logs: result.rows,
       pagination: {
-        page: Number.parseInt(page),
-        limit: Number.parseInt(limit),
+        page: Number(page),
+        limit: Number(limit),
         total: result.rows.length
       }
     });
@@ -178,7 +182,7 @@ app.get('/logs', async (req, res) => {
   }
 });
 
-app.get('/logs/stats', async (req, res) => {
+app.get('/logs/stats', async (req: Request, res: Response) => {
   try {
     const statsQuery = `
       SELECT 
@@ -191,8 +195,7 @@ app.get('/logs/stats', async (req, res) => {
       GROUP BY service, level
       ORDER BY service, level
     `;
-    
-    const result = await pool.query(statsQuery);
+    const result: QueryResult = await pool.query(statsQuery);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching log stats:', error);
@@ -200,15 +203,12 @@ app.get('/logs/stats', async (req, res) => {
   }
 });
 
-app.get('/logs/hero/:heroId', async (req, res) => {
+app.get('/logs/hero/:heroId', async (req: Request, res: Response) => {
   try {
     const { heroId } = req.params;
-    
     if (!heroId) {
       return res.status(400).json({ error: 'Hero ID is required' });
     }
-    
-    // Recherche dans JSON et dans user_id
     const query = `
       SELECT * FROM logs 
       WHERE user_id = $1 
@@ -217,12 +217,10 @@ app.get('/logs/hero/:heroId', async (req, res) => {
          OR metadata->>'hero_id' = $1
       ORDER BY timestamp DESC
     `;
-    
-    const result = await pool.query(query, [
+    const result: QueryResult = await pool.query(query, [
       heroId,
       JSON.stringify({ heroId })
     ]);
-    
     res.json({
       logs: result.rows,
       count: result.rows.length
@@ -233,11 +231,10 @@ app.get('/logs/hero/:heroId', async (req, res) => {
   }
 });
 
-async function startService() {
+async function startService(): Promise<void> {
   try {
     await initDatabase();
     await connectToRabbitMQ();
-    
     app.listen(port, () => {
       console.log(`Log Service listening on port ${port}`);
       console.log('Service mode: PASSIVE - Only consuming messages from RabbitMQ');
@@ -247,6 +244,7 @@ async function startService() {
     process.exit(1);
   }
 }
+
 
 process.on('SIGINT', async () => {
   console.log('Shutting down gracefully...');
