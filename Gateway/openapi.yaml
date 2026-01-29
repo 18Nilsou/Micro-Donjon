@@ -1371,5 +1371,3 @@ tags:
     description: Logique de jeu et combats
   - name: Logs
     description: Système de logs et événements
-  - name: Health
-    description: Surveillance et santé des services
