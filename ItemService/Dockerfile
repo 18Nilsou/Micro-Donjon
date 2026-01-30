@@ -10,8 +10,6 @@ COPY . .
 
 RUN mkdir -p data
 
-RUN npm run seed
-
 EXPOSE 3004
 
 ENV PORT=3004
