@@ -1,3 +1,4 @@
+import { NotFoundError } from "../domain/errors/NotFoundError";
 import { Mob } from "../domain/models/Mob";
 import { MobService } from "./MobService";
 
@@ -5,7 +6,7 @@ describe('MobService', () => {
     let service: MobService;
 
     const mobsData: Mob[] = [
-        { name: "Lenny Spider", hp: 100, attack: 15, type: 'Common' },
+        { name: "Lenny Spider", hp: 100, attack: 15, type: "Common" },
         { name: "Lacaca, Eater of Pizza", hp: 2000, attack: 50, type: "Boss" }
     ];
 
@@ -37,16 +38,14 @@ describe('MobService', () => {
         ]);
     });
 
-    it('should return empty array if no mobs of given type', () => {
+    it('should throw when no mobs found for type', () => {
         // Given
-        service.mobs = [
-            { name: "Lenny Spider", hp: 100, attack: 15, type: 'Common' }
-        ];
+        jest.mock('../../data/mobs_data.json', () => (
+            { name: "Lenny Spider", hp: 100, attack: 15, type: "Common" }
+        ), { virtual: true });
 
-        // When
-        const commonMobs = service.getByType('Boss');
-
-        // Then
-        expect(commonMobs).toEqual([]);
+        // When & Then
+        expect(() => service.getByType('Elite' as any)).toThrow(NotFoundError);
+        expect(() => service.getByType('Elite' as any)).toThrow('No mobs found of type: Elite');
     });
 });

@@ -1,8 +1,9 @@
 import { Mob } from "../domain/models/Mob";
+import { NotFoundError } from "../domain/errors/NotFoundError";
 
 export class MobService {
 
-    mobs: Mob[] = [];
+    private mobs: Mob[] = [];
 
     list(): Mob[] {
         if (this.mobs.length === 0) {
@@ -16,6 +17,11 @@ export class MobService {
         if (this.mobs.length === 0) {
             this.list();
         }
-        return this.mobs.filter(mob => mob.type === type);
+        const filteredMobs = this.mobs.filter(mob => mob.type === type);
+
+        if (filteredMobs.length === 0) {
+            throw new NotFoundError(`No mobs found of type: ${type}`);
+        }
+        return filteredMobs;
     }
 }

@@ -1,22 +1,19 @@
 import { MobController } from './MobController';
 import { Mob } from '../domain/models/Mob';
+import { MobService } from '../services/MobService';
+import { NotFoundError } from '../domain/errors/NotFoundError';
 
 describe('MobController', () => {
-    let mockService: {
-        mobs: Mob[];
-        list: jest.Mock<Mob[], []>;
-        getByType: jest.Mock<Mob[], [type: 'Common' | 'Boss']>;
-    };
+    let mockService: Partial<MobService>;
     let controller: MobController;
     let mockRes: any;
 
     beforeEach(() => {
         mockService = {
-            mobs: [],
             list: jest.fn(),
             getByType: jest.fn(),
         };
-        controller = new MobController(mockService);
+        controller = new MobController(mockService as MobService);
         const json = jest.fn().mockReturnThis();
         mockRes = {
             status: jest.fn().mockReturnThis(),
@@ -32,7 +29,7 @@ describe('MobController', () => {
             { name: "Dieg'Art", hp: 80, attack: 10, type: "Common" },
             { name: "Lacaca, Eater of Pizza", hp: 2000, attack: 50, type: "Boss" }
         ];
-        mockService.list.mockReturnValue(sample);
+        (mockService.list as jest.Mock).mockReturnValue(sample);
 
         const mockReq = {} as any;
 
@@ -52,7 +49,7 @@ describe('MobController', () => {
             { name: "Dieg'Art", hp: 80, attack: 10, type: "Common" },
             { name: "Lacaca, Eater of Pizza", hp: 2000, attack: 50, type: "Boss" }
         ];
-        mockService.getByType.mockReturnValue(sample);
+        (mockService.getByType as jest.Mock).mockReturnValue(sample);
 
         const mockReq = { params: { type: "Common" } } as any;
 
@@ -67,11 +64,12 @@ describe('MobController', () => {
 
     it('should throw when no mobs found for type', () => {
         // Given
-        mockService.getByType.mockReturnValue([]);
-        const mockReq = { params: { type: "Boss" } } as any;
+        const error = new NotFoundError('No mobs found of type: Elite');
+        (mockService.getByType as jest.Mock).mockImplementation(() => { throw error; });
+        const mockReq = { params: { type: "Elite" } } as any;
 
         // When & Then
-        expect(() => controller.getMobsByType(mockReq, mockRes)).toThrow();
-        expect(mockService.getByType).toHaveBeenCalledWith("Boss");
+        expect(() => controller.getMobsByType(mockReq, mockRes)).toThrow(NotFoundError);
+        expect(mockService.getByType).toHaveBeenCalledWith("Elite");
     });
 });

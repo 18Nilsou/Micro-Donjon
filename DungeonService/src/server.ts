@@ -20,12 +20,12 @@ const swaggerDocument = YAML.parse(file)
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 const dungeonService = new DungeonService();
-const mobController = new DungeonController(dungeonService);
-mobController.registerRoutes(app);
+const dungeonController = new DungeonController(dungeonService);
+dungeonController.registerRoutes(app);
 
 app.use(errorHandler);
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3003;
 
 async function startServer() {
   try {
