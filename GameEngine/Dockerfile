@@ -1,13 +1,17 @@
-FROM node:20-alpine
+FROM node:20 AS base
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
+COPY package.json package-lock.json* ./
 
-RUN npm install
+RUN npm ci
 
 COPY . .
 
-EXPOSE 3000
+RUN mkdir -p data
 
-CMD [ "node", "index.js" ]
+EXPOSE 3001
+
+ENV PORT=3001
+
+CMD ["npm", "run", "dev"]
