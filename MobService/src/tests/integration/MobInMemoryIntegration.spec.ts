@@ -9,18 +9,18 @@ describe('MobService', () => {
         service = new MobService();
     });
 
-    it('should list mobs', () => {
+    it('should list mobs', async () => {
         // When
-        const mobs = service.list();
+        const mobs = await service.list();
 
         // Then
         expect(mobs).toEqual(mobsData);
     });
 
-    it('should get mobs by type', () => {
+    it('should get mobs by type', async () => {
         // When
-        const commonMobs = service.getByType('Common');
-        const bossMobs = service.getByType('Boss');
+        const commonMobs = await service.getByType('Common');
+        const bossMobs = await service.getByType('Boss');
 
         // Then
         expect(commonMobs).toEqual([

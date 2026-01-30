@@ -12,7 +12,7 @@ export class HeroService {
         const heroesData = require('../../data/hero_data.json');
 
         if (logPublisher) {
-            await logPublisher.logHeroEvent('HEROES_RETRIEVED', { heroId: 'all' });
+            await logPublisher.logHeroEvent('HEROES_RETRIEVED', { heroJson: 'all' });
         }
         return Promise.resolve(heroesData);
     }
@@ -57,7 +57,6 @@ export class HeroService {
         }
         
         if (logPublisher) {
-            console.log('sdfghjk')
             await logPublisher.logHeroEvent('HERO_RETRIEVED', { heroId: hero.id });
         }
         

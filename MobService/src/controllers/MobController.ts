@@ -11,15 +11,15 @@ export class MobController {
     app.get('/mobs/:type', this.getMobsByType.bind(this));
   }
 
-  listAllMobs(req: Request, res: Response) {
-    const mobs: Mob[] = this.mobService.list();
+  async listAllMobs(req: Request, res: Response) {
+    const mobs: Mob[] = await this.mobService.list();
     res.status(200).send(mobs);
   }
 
-  getMobsByType(req: Request, res: Response) {
+  async getMobsByType(req: Request, res: Response) {
     const type = req.params.type as 'Common' | 'Boss';
 
-    const mobs: Mob[] = this.mobService.getByType(type);
+    const mobs: Mob[] = await this.mobService.getByType(type);
 
     res.status(200).send(mobs);
   }

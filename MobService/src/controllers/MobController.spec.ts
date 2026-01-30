@@ -22,54 +22,54 @@ describe('MobController', () => {
         };
     });
 
-    it('should list mobs', () => {
+    it('should list mobs', async () => {
         // Given
         const sample: Mob[] = [
             { name: "Lenny Spider", hp: 100, attack: 15, type: "Common" },
             { name: "Dieg'Art", hp: 80, attack: 10, type: "Common" },
             { name: "Lacaca, Eater of Pizza", hp: 2000, attack: 50, type: "Boss" }
         ];
-        (mockService.list as jest.Mock).mockReturnValue(sample);
+        (mockService.list as jest.Mock).mockResolvedValue(sample);  // mockResolvedValue au lieu de mockReturnValue
 
         const mockReq = {} as any;
 
         // When
-        controller.listAllMobs(mockReq, mockRes);
+        await controller.listAllMobs(mockReq, mockRes);
 
         // Then
         expect(mockService.list).toHaveBeenCalledTimes(1);
         expect(mockRes.status).toHaveBeenCalledWith(200);
-        expect(mockRes.json).toHaveBeenCalledWith(sample);
+        expect(mockRes.send).toHaveBeenCalledWith(sample);
     });
 
-    it('should get mobs by type', () => {
+    it('should get mobs by type', async () => {
         // Given
         const sample: Mob[] = [
             { name: "Lenny Spider", hp: 100, attack: 15, type: "Common" },
             { name: "Dieg'Art", hp: 80, attack: 10, type: "Common" },
             { name: "Lacaca, Eater of Pizza", hp: 2000, attack: 50, type: "Boss" }
         ];
-        (mockService.getByType as jest.Mock).mockReturnValue(sample);
+        (mockService.getByType as jest.Mock).mockResolvedValue(sample);  // mockResolvedValue
 
         const mockReq = { params: { type: "Common" } } as any;
 
         // When
-        controller.getMobsByType(mockReq, mockRes);
+        await controller.getMobsByType(mockReq, mockRes);
 
         // Then
         expect(mockService.getByType).toHaveBeenCalledWith("Common");
         expect(mockRes.status).toHaveBeenCalledWith(200);
-        expect(mockRes.json).toHaveBeenCalledWith(sample);
+        expect(mockRes.send).toHaveBeenCalledWith(sample);
     });
 
-    it('should throw when no mobs found for type', () => {
+    it('should throw when no mobs found for type', async () => {
         // Given
         const error = new NotFoundError('No mobs found of type: Elite');
-        (mockService.getByType as jest.Mock).mockImplementation(() => { throw error; });
+        (mockService.getByType as jest.Mock).mockRejectedValue(error);  // mockRejectedValue pour simuler un throw async
         const mockReq = { params: { type: "Elite" } } as any;
 
         // When & Then
-        expect(() => controller.getMobsByType(mockReq, mockRes)).toThrow(NotFoundError);
+        await expect(controller.getMobsByType(mockReq, mockRes)).rejects.toThrow(NotFoundError);
         expect(mockService.getByType).toHaveBeenCalledWith("Elite");
     });
 });

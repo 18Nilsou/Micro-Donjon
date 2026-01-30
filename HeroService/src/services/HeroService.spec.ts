@@ -47,7 +47,6 @@ describe('HeroService', () => {
             const heroData: any = {
                 name: "Wizard",
                 healthPointsMax: 80,
-                level: 5,
                 attackPoints: 20,
                 or: 100
             };
@@ -61,7 +60,7 @@ describe('HeroService', () => {
                 name: "Wizard",
                 healthPoints: 80,
                 healthPointsMax: 80,
-                level: 5,
+                level: 1,
                 attackPoints: 20,
                 inventory: [],
                 or: 100
