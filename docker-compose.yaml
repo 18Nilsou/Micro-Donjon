@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   
   # Message Broker (RabbitMQ) - Pour le service de Log (Pub/Sub)
