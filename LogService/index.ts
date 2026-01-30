@@ -55,13 +55,13 @@ async function initDatabase(): Promise<void> {
 
 async function connectToRabbitMQ(): Promise<void> {
   await retryWithBackoff(async () => {
-    
+
     const connection: Connection = await amqp.connect(rabbitmqUrl);
-    
+
     channel = await connection.createChannel();
     await channel.assertExchange('game_events', 'topic', { durable: true });
     const queue = await channel.assertQueue('logs_queue', { durable: true });
-    
+
     const routingKeys: string[] = [
       'hero.*',
       'game.*',
@@ -88,7 +88,7 @@ async function connectToRabbitMQ(): Promise<void> {
         }
       }
     }, { noAck: false });
-    
+
     console.log('Connected to RabbitMQ and listening for messages...');
   });
 }
@@ -231,12 +231,42 @@ app.get('/logs/hero/:heroId', async (req: Request, res: Response) => {
   }
 });
 
+// Health check endpoint
+app.get('/health', async (req: Request, res: Response) => {
+  const health = {
+    status: 'healthy',
+    service: 'log-service',
+    timestamp: new Date().toISOString(),
+    postgres_connected: false,
+    rabbitmq_connected: false
+  };
+
+  // Check PostgreSQL
+  try {
+    await pool.query('SELECT 1');
+    health.postgres_connected = true;
+  } catch (error) {
+    health.status = 'degraded';
+  }
+
+  // Check RabbitMQ
+  if (channel) {
+    health.rabbitmq_connected = true;
+  } else {
+    health.status = 'degraded';
+  }
+
+  const statusCode = health.status === 'healthy' ? 200 : 503;
+  res.status(statusCode).json(health);
+});
+
 async function startService(): Promise<void> {
   try {
     await initDatabase();
     await connectToRabbitMQ();
     app.listen(port, () => {
       console.log(`Log Service listening on port ${port}`);
+      console.log(`Health check at http://localhost:${port}/health`);
       console.log('Service mode: PASSIVE - Only consuming messages from RabbitMQ');
     });
   } catch (error) {

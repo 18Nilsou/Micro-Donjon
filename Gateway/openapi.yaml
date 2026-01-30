@@ -17,8 +17,8 @@ paths:
         - Heroes
       requestBody:
         required: true
-        content:
-          application/json
+        content: 
+          application/json:
             schema:
               type: object
               required:

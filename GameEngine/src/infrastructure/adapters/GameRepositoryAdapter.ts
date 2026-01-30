@@ -1,21 +1,15 @@
 import { Game } from '../../domain/models/Game';
 import { GameRepositoryPort } from '../../application/ports/outbound/GameRepositoryPort';
-import { createClient } from 'redis';
+import { redisClient } from '../../config/redis';
 
 export class GameRepositoryAdapter implements GameRepositoryPort {
-  private client;
-
-  constructor() {
-    this.client = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
-    this.client.connect();
-  }
 
   async save(game: Game): Promise<void> {
-    await this.client.set(`game:${game.id}`, JSON.stringify(game));
+    await redisClient.set(`game:${game.id}`, JSON.stringify(game));
   }
 
   async findById(id: string): Promise<Game | null> {
-    const data = await this.client.get(`game:${id}`);
+    const data = await redisClient.get(`game:${id}`);
     return data ? JSON.parse(data) : null;
   }
 
@@ -28,6 +22,6 @@ export class GameRepositoryAdapter implements GameRepositoryPort {
   }
 
   async delete(id: string): Promise<void> {
-    await this.client.del(`game:${id}`);
+    await redisClient.del(`game:${id}`);
   }
 }

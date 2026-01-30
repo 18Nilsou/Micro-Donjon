@@ -1,17 +1,21 @@
-FROM node:20 AS base
+FROM node:20-alpine
 
 WORKDIR /usr/src/app
 
-COPY package.json package-lock.json* ./
+COPY package.json ./
 
-RUN npm ci
+RUN npm install
 
 COPY . .
 
 RUN mkdir -p data
 
+RUN npm run build
+
 EXPOSE 3001
 
 ENV PORT=3001
+ENV REDIS_HOST=redis-game
+ENV REDIS_PORT=6379
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]

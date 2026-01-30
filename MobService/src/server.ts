@@ -23,6 +23,15 @@ const mobService = new MobService();
 const mobController = new MobController(mobService);
 mobController.registerRoutes(app);
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    service: 'mob-service',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use(errorHandler);
 
 const port = process.env.PORT || 3006;
@@ -33,6 +42,7 @@ async function startServer() {
     app.listen(port, () => {
       console.log(`Server listening on http://localhost:${port}`);
       console.log(`Swagger docs at http://localhost:${port}/docs`);
+      console.log(`Health check at http://localhost:${port}/health`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
