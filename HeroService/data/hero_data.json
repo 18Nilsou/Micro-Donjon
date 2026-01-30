@@ -1,0 +1,30 @@
+[
+    {
+        "name":"Knight",
+        "healthPointsMax":100,
+        "level":1,
+        "attackPoints":15,
+        "or":10
+    },
+    {
+        "name":"Mega Knight",
+        "healthPointsMax":400,
+        "level":1,
+        "attackPoints":35,
+        "or":60
+    },
+    {
+        "name":"LeenyBar",
+        "healthPointsMax":30,
+        "level":1,
+        "attackPoints":100,
+        "or":50
+    },
+    {
+        "name":"azert",
+        "healthPointsMax":1000,
+        "level":1,
+        "attackPoints":5,
+        "or":5000
+    }
+]
