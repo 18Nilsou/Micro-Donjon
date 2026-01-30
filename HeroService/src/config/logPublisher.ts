@@ -37,7 +37,6 @@ export class LogPublisher {
         this.isConnected = true;
         console.log('Connected to RabbitMQ for logging');
 
-        // Gestion de la déconnexion
         this.connection.on('error', (err) => {
           console.error('RabbitMQ connection error:', err);
           this.isConnected = false;

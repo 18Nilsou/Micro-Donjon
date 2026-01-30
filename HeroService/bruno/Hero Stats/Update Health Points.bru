@@ -1,0 +1,28 @@
+meta {
+  name: Update Health Points
+  type: http
+  seq: 1
+}
+
+put {
+  url: {{baseUrl}}/hero/{{heroId}}/healthPoints
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "healthPoints": 80
+  }
+}
+
+tests {
+  test("should return status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return updated hero with new health points", function() {
+    const body = res.getBody();
+    expect(body.healthPoints).to.equal(80);
+  });
+}

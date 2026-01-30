@@ -1,0 +1,28 @@
+meta {
+  name: Update Attack Points
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/hero/{{heroId}}/attackPoints
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "attackPoints": 25
+  }
+}
+
+tests {
+  test("should return status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return updated hero with new attack points", function() {
+    const body = res.getBody();
+    expect(body.attackPoints).to.equal(25);
+  });
+}

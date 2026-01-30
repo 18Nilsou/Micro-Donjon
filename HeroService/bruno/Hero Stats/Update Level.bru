@@ -1,0 +1,28 @@
+meta {
+  name: Update Level
+  type: http
+  seq: 3
+}
+
+put {
+  url: {{baseUrl}}/hero/{{heroId}}/level
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "level": 5
+  }
+}
+
+tests {
+  test("should return status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return updated hero with new level", function() {
+    const body = res.getBody();
+    expect(body.level).to.equal(5);
+  });
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Update Inventory
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{baseUrl}}/hero/{{heroId}}/inventory
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "id": 2,
+    "quantity": 5
+  }
+}
+
+tests {
+  test("should return status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return updated hero with inventory", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('inventory');
+  });
+}

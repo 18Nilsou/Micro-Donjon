@@ -1,0 +1,39 @@
+meta {
+  name: Create Hero
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/hero
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "TestHero",
+    "healthPointsMax": 100,
+    "level": 1,
+    "attackPoints": 20,
+    "or": 50
+  }
+}
+
+tests {
+  test("should return status 201", function() {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("should return created hero with id", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('id');
+    expect(body.name).to.equal('TestHero');
+  });
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setEnvVar("heroId", res.getBody().id);
+  }
+}

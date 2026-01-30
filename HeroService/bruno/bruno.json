@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "HeroService",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

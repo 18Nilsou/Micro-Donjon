@@ -1,0 +1,22 @@
+meta {
+  name: Get Hero Inventory
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/hero/{{heroId}}/inventory
+  body: none
+  auth: none
+}
+
+tests {
+  test("should return status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return inventory array", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+  });
+}

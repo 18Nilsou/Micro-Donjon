@@ -1,0 +1,28 @@
+meta {
+  name: Update Health Points Max
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{baseUrl}}/hero/{{heroId}}/healthPointsMax
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "healthPointsMax": 150
+  }
+}
+
+tests {
+  test("should return status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return updated hero with new max health points", function() {
+    const body = res.getBody();
+    expect(body.healthPointsMax).to.equal(150);
+  });
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Get Hero Not Found
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/hero/invalid-id-12345
+  body: none
+  auth: none
+}
+
+tests {
+  test("should return status 404", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("should return error message", function() {
+    const body = res.getBody();
+    expect(body).to.have.property('error');
+  });
+}
