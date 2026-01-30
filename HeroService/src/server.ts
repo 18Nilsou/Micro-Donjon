@@ -8,6 +8,7 @@ import { HeroService } from "./services/HeroService";
 import { HeroController } from "./controllers/HeroController";
 import { errorHandler } from "./errorHandling";
 import { connectRedis } from './config/redis';
+import { initLogPublisher } from './config/logPublisher';
 
 dotenv.config();
 
@@ -30,7 +31,7 @@ const port = process.env.PORT || 3002;
 async function startServer() {
   try {
     await connectRedis();
-
+    await initLogPublisher();
     app.listen(port, () => {
       console.log(`Server listening on http://localhost:${port}`);
       console.log(`Swagger docs at http://localhost:${port}/docs`);

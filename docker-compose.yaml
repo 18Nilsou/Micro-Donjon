@@ -102,8 +102,10 @@ services:
       - "3002:3002"
     environment:
       - REDIS_HOST=redis-hero
+      - RABBITMQ_URL=amqp://rabbitmq:5672
     depends_on:
       - redis-hero
+      - rabbitmq
     networks:
       - game-network
 

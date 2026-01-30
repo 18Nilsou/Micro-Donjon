@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "rm -rf dist/ && tsc -p tsconfig.json && mkdir dist/src/api && cp src/api/hero.yaml dist/src/api/hero.yaml",
+    "build": "rm -rf dist/ && tsc -p tsconfig.json && mkdir -p dist/src/api && cp src/api/hero.yaml dist/src/api/hero.yaml && mkdir -p dist/data && cp data/hero_data.json dist/data/hero_data.json",
     "start": "node dist/src/server.js",
     "lint": "eslint . --ext .ts",
     "test": "jest --coverage"
@@ -15,6 +15,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "amqplib": "^0.10.3",
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
     "redis": "^4.6.7",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@stryker-mutator/core": "^9.4.0",
     "@stryker-mutator/jest-runner": "^9.4.0",
+    "@types/amqplib": "^0.10.1",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.0.0",
     "@types/node": "^20.5.1",

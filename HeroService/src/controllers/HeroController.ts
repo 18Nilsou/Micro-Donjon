@@ -11,14 +11,13 @@ export class HeroController {
     app.get('/heroes', this.listAllHeroes.bind(this));
     app.post('/hero', this.createHero.bind(this));
     app.get('/hero/:id', this.getHeroById.bind(this));
-    app.put('/hero/{id}/healthPoints', this.updateHeroHealthPoints.bind(this));
-    app.put('/hero/{id}/healthPointsMax', this.updateHeroHealthPointsMax.bind(this));
-    app.put('/hero/{id}/level', this.updateHeroLevel.bind(this));
-    app.put('/hero/{id}/level', this.updateHeroLevel.bind(this));
-    app.put('/hero/{id}/attackPoints', this.updateHeroAttackPoints.bind(this));
-    app.post('/hero/{id}/inventory/add', this.addHeroItem.bind(this));
-    app.put('/hero/{id}/inventory', this.addHeroItem.bind(this));
-    app.get('/hero/{id}/inventory', this.getHeroInventory.bind(this));
+    app.put('/hero/:id/healthPoints', this.updateHeroHealthPoints.bind(this));
+    app.put('/hero/:id/healthPointsMax', this.updateHeroHealthPointsMax.bind(this));
+    app.put('/hero/:id/level', this.updateHeroLevel.bind(this));
+    app.put('/hero/:id/attackPoints', this.updateHeroAttackPoints.bind(this));
+    app.post('/hero/:id/inventory/add', this.addHeroItem.bind(this));
+    app.put('/hero/:id/inventory', this.addHeroItem.bind(this));
+    app.get('/hero/:id/inventory', this.getHeroInventory.bind(this));
   }
 
   async listAllHeroes(req: Request, res: Response) {
