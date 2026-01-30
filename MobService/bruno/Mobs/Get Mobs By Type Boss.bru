@@ -1,0 +1,28 @@
+meta {
+  name: Get Mobs By Type Boss
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/mobs/Boss
+  body: none
+  auth: none
+}
+
+tests {
+  test("should return status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return an array", function() {
+    expect(res.getBody()).to.be.an('array');
+  });
+
+  test("should return only Boss mobs", function() {
+    const body = res.getBody();
+    body.forEach(mob => {
+      expect(mob.type).to.equal('Boss');
+    });
+  });
+}

@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "MobService",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

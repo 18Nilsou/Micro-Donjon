@@ -1,0 +1,31 @@
+meta {
+  name: Get All Mobs
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/mobs
+  body: none
+  auth: none
+}
+
+tests {
+  test("should return status 200", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("should return an array", function() {
+    expect(res.getBody()).to.be.an('array');
+  });
+
+  test("should return mobs with correct properties", function() {
+    const body = res.getBody();
+    if (body.length > 0) {
+      expect(body[0]).to.have.property('name');
+      expect(body[0]).to.have.property('hp');
+      expect(body[0]).to.have.property('attack');
+      expect(body[0]).to.have.property('type');
+    }
+  });
+}
