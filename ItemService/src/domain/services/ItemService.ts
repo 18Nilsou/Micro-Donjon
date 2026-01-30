@@ -26,6 +26,14 @@ export class ItemService implements ItemServicePort {
     return this.itemRepo.findAll();
   }
 
+  create(item: Item): Item {
+    return this.itemRepo.insert(item);
+  }
+
+  update(uuid: string, item: Item): Item {
+    return this.itemRepo.update(uuid, item);
+  }
+
   generate(rarity: Rarete, itemTypeId: number, position: Position, roomId: string): Item {
     const itemType = this.itemTypeRepo.findById(itemTypeId);
     if (!itemType) {

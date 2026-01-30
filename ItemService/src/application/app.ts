@@ -18,7 +18,7 @@ app.use(express.json());
 
 // --- Swagger ---
 try {
-    const file = fs.readFileSync(path.resolve(__dirname, '../api/openapi.yml'), 'utf8');
+    const file = fs.readFileSync(path.resolve(__dirname, '../../openapi.yml'), 'utf8');
     const swaggerDocument = YAML.parse(file);
     app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 } catch (err) {
