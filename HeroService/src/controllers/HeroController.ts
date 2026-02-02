@@ -2,6 +2,8 @@ import { Express, Response, Request } from "express";
 import { Hero } from "../domain/models/Hero";
 import { HeroService } from "../services/HeroService";
 import { NotFoundError } from "../domain/errors/NotFoundError";
+import { Class } from "../domain/models/Class";
+import { CreateHeroRequest } from "../domain/models/CreateHeroRequest";
 
 export class HeroController {
 
@@ -9,15 +11,16 @@ export class HeroController {
 
   registerRoutes(app: Express) {
     app.get('/heroes', this.listAllHeroes.bind(this));
-    app.post('/hero', this.createHero.bind(this));
-    app.get('/hero/:id', this.getHeroById.bind(this));
-    app.put('/hero/:id/healthPoints', this.updateHeroHealthPoints.bind(this));
-    app.put('/hero/:id/healthPointsMax', this.updateHeroHealthPointsMax.bind(this));
-    app.put('/hero/:id/level', this.updateHeroLevel.bind(this));
-    app.put('/hero/:id/attackPoints', this.updateHeroAttackPoints.bind(this));
-    app.post('/hero/:id/inventory/add', this.addHeroItem.bind(this));
-    app.put('/hero/:id/inventory', this.addHeroItem.bind(this));
-    app.get('/hero/:id/inventory', this.getHeroInventory.bind(this));
+    app.get('/heroes/classes', this.listAllClasses.bind(this));
+    app.post('/heroes', this.createHero.bind(this));
+    app.get('/heroes/:id', this.getHeroById.bind(this));
+    app.put('/heroes/:id/healthPoints', this.updateHeroHealthPoints.bind(this));
+    app.put('/heroes/:id/healthPointsMax', this.updateHeroHealthPointsMax.bind(this));
+    app.put('/heroes/:id/level', this.updateHeroLevel.bind(this));
+    app.put('/heroes/:id/attackPoints', this.updateHeroAttackPoints.bind(this));
+    app.post('/heroes/:id/inventory/add', this.addHeroItem.bind(this));
+    app.put('/heroes/:id/inventory', this.addHeroItem.bind(this));
+    app.get('/heroes/:id/inventory', this.getHeroInventory.bind(this));
   }
 
   async listAllHeroes(req: Request, res: Response) {
@@ -25,8 +28,13 @@ export class HeroController {
     res.status(200).send(heroes);
   }
 
+  async listAllClasses(req: Request, res: Response) {
+    const classes: Class[] = await this.heroService.listClasses();
+    res.status(200).send(classes);
+  }
+
   async createHero(req: Request, res: Response) {
-    const heroData = req.body;
+    const heroData: CreateHeroRequest = req.body;
     const newHero: Hero = await this.heroService.create(heroData);
     res.status(201).send(newHero);
   }

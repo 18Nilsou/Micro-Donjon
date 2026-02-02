@@ -16,7 +16,7 @@ describe('HeroService - In Memory Integration', () => {
         expect(heroes).toBeDefined();
         expect(Array.isArray(heroes)).toBe(true);
         expect(heroes.length).toBeGreaterThan(0);
-        
+
         // Verify structure of first hero
         const firstHero = heroes[0];
         expect(firstHero).toHaveProperty('name');
@@ -37,7 +37,7 @@ describe('HeroService - In Memory Integration', () => {
             expect(knightHero.healthPointsMax).toBe(100);
             expect(knightHero.level).toBe(1);
             expect(knightHero.attackPoints).toBe(15);
-            expect(knightHero.or).toBe(10);
+            expect(knightHero.gold).toBe(10);
         }
 
         const megaKnightHero = heroes.find((h: Hero) => h.name === 'Mega Knight');
@@ -46,7 +46,7 @@ describe('HeroService - In Memory Integration', () => {
             expect(megaKnightHero.healthPointsMax).toBe(400);
             expect(megaKnightHero.level).toBe(1);
             expect(megaKnightHero.attackPoints).toBe(35);
-            expect(megaKnightHero.or).toBe(60);
+            expect(megaKnightHero.gold).toBe(60);
         }
     });
 
@@ -60,7 +60,7 @@ describe('HeroService - In Memory Integration', () => {
             expect(typeof hero.healthPointsMax).toBe('number');
             expect(typeof hero.level).toBe('number');
             expect(typeof hero.attackPoints).toBe('number');
-            expect(typeof hero.or).toBe('number');
+            expect(typeof hero.gold).toBe('number');
             expect(hero.healthPointsMax).toBeGreaterThan(0);
             expect(hero.level).toBeGreaterThanOrEqual(1);
             expect(hero.attackPoints).toBeGreaterThan(0);

@@ -22,7 +22,8 @@ describe('HeroService', () => {
             level: 1,
             attackPoints: 15,
             inventory: [],
-            or: 10
+            class: "Warrior",
+            gold: 10
         },
         {
             id: '2',
@@ -32,7 +33,8 @@ describe('HeroService', () => {
             level: 1,
             attackPoints: 35,
             inventory: [],
-            or: 60
+            class: "Paladin",
+            gold: 60
         }
     ];
 

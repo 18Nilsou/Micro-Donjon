@@ -33,25 +33,27 @@ describe('HeroController', () => {
         it('should list all heroes', async () => {
             // Given
             const sample: Hero[] = [
-                { 
-                    id: '1', 
-                    name: "Aragorn", 
-                    healthPoints: 100, 
-                    healthPointsMax: 100, 
-                    level: 10, 
-                    attackPoints: 25, 
-                    inventory: [], 
-                    or: 1000 
+                {
+                    id: '1',
+                    name: "Aragorn",
+                    healthPoints: 100,
+                    healthPointsMax: 100,
+                    level: 10,
+                    attackPoints: 25,
+                    inventory: [],
+                    class: "Warrior",
+                    gold: 1000
                 },
-                { 
-                    id: '2', 
-                    name: "Gandalf", 
-                    healthPoints: 80, 
-                    healthPointsMax: 80, 
-                    level: 15, 
-                    attackPoints: 30, 
-                    inventory: [], 
-                    or: 2000 
+                {
+                    id: '2',
+                    name: "Gandalf",
+                    healthPoints: 80,
+                    healthPointsMax: 80,
+                    level: 15,
+                    attackPoints: 30,
+                    inventory: [],
+                    class: "Mage",
+                    gold: 2000
                 }
             ];
             (mockService.list as jest.Mock).mockResolvedValue(sample);
@@ -87,7 +89,8 @@ describe('HeroController', () => {
                 level: 8,
                 attackPoints: 28,
                 inventory: [],
-                or: 800
+                class: "Archer",
+                gold: 800
             };
 
             (mockService.create as jest.Mock).mockResolvedValue(createdHero);
@@ -116,7 +119,8 @@ describe('HeroController', () => {
                 level: 10,
                 attackPoints: 25,
                 inventory: [],
-                or: 1000
+                class: "Warrior",
+                gold: 1000
             };
 
             (mockService.getById as jest.Mock).mockResolvedValue(hero);
@@ -177,7 +181,8 @@ describe('HeroController', () => {
                 level: 10,
                 attackPoints: 25,
                 inventory: [],
-                or: 1000
+                class: "Warrior",
+                gold: 1000
             };
 
             (mockService.updateHealthPoints as jest.Mock).mockResolvedValue(updatedHero);
@@ -223,7 +228,8 @@ describe('HeroController', () => {
                 level: 10,
                 attackPoints: 25,
                 inventory: [],
-                or: 1000
+                class: "Warrior",
+                gold: 1000
             };
 
             (mockService.updateHealthPointsMax as jest.Mock).mockResolvedValue(updatedHero);
@@ -253,7 +259,8 @@ describe('HeroController', () => {
                 level: 15,
                 attackPoints: 25,
                 inventory: [],
-                or: 1000
+                class: "Warrior",
+                gold: 1000
             };
 
             (mockService.updateLevel as jest.Mock).mockResolvedValue(updatedHero);
@@ -283,7 +290,8 @@ describe('HeroController', () => {
                 level: 10,
                 attackPoints: 35,
                 inventory: [],
-                or: 1000
+                class: "Warrior",
+                gold: 1000
             };
 
             (mockService.updateAttackPoints as jest.Mock).mockResolvedValue(updatedHero);
@@ -313,7 +321,8 @@ describe('HeroController', () => {
                 level: 10,
                 attackPoints: 25,
                 inventory: [{ id: 101, quantity: 2 }],
-                or: 1000
+                class: "Warrior",
+                gold: 1000
             };
 
             (mockService.addItemToInventory as jest.Mock).mockResolvedValue(undefined);

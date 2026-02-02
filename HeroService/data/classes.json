@@ -1,0 +1,17 @@
+[
+    {
+        "name": "Warrior",
+        "healthPoints": 200,
+        "attackPoints": 20
+    },
+    {
+        "name": "Mage",
+        "healthPoints": 100,
+        "attackPoints": 40
+    },
+    {
+        "name": "Archer",
+        "healthPoints": 150,
+        "attackPoints": 30
+    }
+]
