@@ -80,7 +80,7 @@ export class LogPublisher {
     }
   }
 
-  async logItemEvent(action: string, itemData: any, userId: string | null = null, sessionId: string | null = null): Promise<void> {
+  async logHeroEvent(action: string, itemData: any, userId: string | null = null, sessionId: string | null = null): Promise<void> {
     await this.publishLog('item.' + action.toLowerCase(), {
       service: 'ITEM_SERVICE',
       action: action,
@@ -89,19 +89,6 @@ export class LogPublisher {
       userId,
       sessionId,
       metadata: itemData,
-      timestamp: new Date().toISOString()
-    });
-  }
-
-  async logItemTypeEvent(action: string, itemTypeData: any, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-    await this.publishLog('item.' + action.toLowerCase(), {
-      service: 'ITEM_SERVICE',
-      action: action,
-      message: `ItemType event: ${action}`,
-      level: 'INFO',
-      userId,
-      sessionId,
-      metadata: itemTypeData,
       timestamp: new Date().toISOString()
     });
   }
