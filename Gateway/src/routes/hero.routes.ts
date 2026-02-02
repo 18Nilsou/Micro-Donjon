@@ -12,6 +12,14 @@ router.get('/heroes', async (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
+router.get('/heroes/classes', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(req, res, SERVICES.HERO, '/heroes/classes');
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/heroes/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(req, res, SERVICES.HERO, `/heroes/${req.params.id}`);
