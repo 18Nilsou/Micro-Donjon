@@ -11,8 +11,8 @@ jest.mock('../config/logPublisher', () => ({
 
 // Mock des données de mobs
 const mobsData: Mob[] = [
-    { name: "Lenny Spider", hp: 100, attack: 15, type: "Common" },
-    { name: "Lacaca, Eater of Pizza", hp: 2000, attack: 50, type: "Boss" }
+    { id: 1, name: "Lenny Spider", healthPoints: 100, attackPoints: 15, type: "Common" },
+    { id: 2, name: "Lacaca, Eater of Pizza", healthPoints: 2000, attackPoints: 50, type: "Boss" }
 ];
 
 jest.mock('../../data/mobs_data.json', () => (mobsData), { virtual: true });
@@ -39,10 +39,10 @@ describe('MobService', () => {
 
         // Then
         expect(commonMobs).toEqual([
-            { name: "Lenny Spider", hp: 100, attack: 15, type: 'Common' },
+            { id: 1, name: "Lenny Spider", healthPoints: 100, attackPoints: 15, type: 'Common' },
         ]);
         expect(bossMobs).toEqual([
-            { name: "Lacaca, Eater of Pizza", hp: 2000, attack: 50, type: "Boss" }
+            { id: 2, name: "Lacaca, Eater of Pizza", healthPoints: 2000, attackPoints: 50, type: "Boss" }
         ]);
     });
 

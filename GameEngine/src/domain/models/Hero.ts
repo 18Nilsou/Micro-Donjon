@@ -2,7 +2,7 @@ import { Item } from './Item';
 import { Position } from './Position';
 
 export interface Hero {
-  id: number;
+  id: string;
   name: string;
   healthPoints: number;
   healthPointsMax: number;

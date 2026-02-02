@@ -1,13 +1,10 @@
-import { Position } from './Position';
+import { Position } from "./Position";
 
 export interface Mob {
   id: number;
   name: string;
-  hp: number;
-  hpMax?: number;
-  attack: number;
-  defense?: number;
-  experience?: number;
+  healthPoints: number;
+  attackPoints: number;
   position?: Position;
   status?: 'alive' | 'dead';
 }

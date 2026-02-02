@@ -4,9 +4,9 @@
   "description": "Game Engine API for managing game logic and state",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/application/server.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "rm -rf dist/ && tsc -p tsconfig.json && mkdir -p dist && cp openapi.yaml dist/openapi.yaml",
-    "start": "node dist/application/server.js",
+    "start": "node dist/server.js",
     "lint": "eslint . --ext .ts",
     "test": "jest --coverage"
   },

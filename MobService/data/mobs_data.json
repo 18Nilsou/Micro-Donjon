@@ -1,26 +1,30 @@
 [
     {
+        "id": 1,
         "name": "Lenny Spider",
-        "hp": 100,
-        "attack": 15,
+        "healthPoints": 100,
+        "attackPoints": 15,
         "type": "Common"
     },
     {
+        "id": 2,
         "name": "Dieg'Art",
-        "hp": 80,
-        "attack": 10,
+        "healthPoints": 80,
+        "attackPoints": 10,
         "type": "Common"
     },
     {
+        "id": 3,
         "name": "Orc",
-        "hp": 150,
-        "attack": 25,
+        "healthPoints": 150,
+        "attackPoints": 25,
         "type": "Common"
     },
     {
+        "id": 4,
         "name": "Lacaca, Eater of Pizza",
-        "hp": 2000,
-        "attack": 50,
+        "healthPoints": 2000,
+        "attackPoints": 50,
         "type": "Boss"
     }
 ]

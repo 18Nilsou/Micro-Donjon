@@ -25,9 +25,9 @@ describe('MobController', () => {
     it('should list mobs', async () => {
         // Given
         const sample: Mob[] = [
-            { name: "Lenny Spider", hp: 100, attack: 15, type: "Common" },
-            { name: "Dieg'Art", hp: 80, attack: 10, type: "Common" },
-            { name: "Lacaca, Eater of Pizza", hp: 2000, attack: 50, type: "Boss" }
+            { id: 1, name: "Lenny Spider", healthPoints: 100, attackPoints: 15, type: "Common" },
+            { id: 2, name: "Dieg'Art", healthPoints: 80, attackPoints: 10, type: "Common" },
+            { id: 3, name: "Lacaca, Eater of Pizza", healthPoints: 2000, attackPoints: 50, type: "Boss" }
         ];
         (mockService.list as jest.Mock).mockResolvedValue(sample);  // mockResolvedValue au lieu de mockReturnValue
 
@@ -45,9 +45,9 @@ describe('MobController', () => {
     it('should get mobs by type', async () => {
         // Given
         const sample: Mob[] = [
-            { name: "Lenny Spider", hp: 100, attack: 15, type: "Common" },
-            { name: "Dieg'Art", hp: 80, attack: 10, type: "Common" },
-            { name: "Lacaca, Eater of Pizza", hp: 2000, attack: 50, type: "Boss" }
+            { id: 1, name: "Lenny Spider", healthPoints: 100, attackPoints: 15, type: "Common" },
+            { id: 2, name: "Dieg'Art", healthPoints: 80, attackPoints: 10, type: "Common" },
+            { id: 3, name: "Lacaca, Eater of Pizza", healthPoints: 2000, attackPoints: 50, type: "Boss" }
         ];
         (mockService.getByType as jest.Mock).mockResolvedValue(sample);  // mockResolvedValue
 

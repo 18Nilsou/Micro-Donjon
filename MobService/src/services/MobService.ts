@@ -4,24 +4,18 @@ import { logPublisher } from "../config/logPublisher";
 
 export class MobService {
 
-    private mobs: Mob[] = [];
-
     async list(): Promise<Mob[]> {
-        if (this.mobs.length === 0) {
-            const mobsData = require('../../data/mobs_data.json');
-            this.mobs = mobsData;
-        }
+        const mobs = require('../../data/mobs_data.json');
+
         if (logPublisher) {
             await logPublisher.logMobEvent('MOBS_RETRIEVED', { mobJson: "all" });
         }
-        return this.mobs;
+        return mobs;
     }
 
     async getByType(type: 'Common' | 'Boss'): Promise<Mob[]> {
-        if (this.mobs.length === 0) {
-            await this.list();  // <-- Ajouter await ici
-        }
-        const filteredMobs = this.mobs.filter(mob => mob.type === type);
+        const mobs = await this.list();
+        const filteredMobs = mobs.filter(mob => mob.type === type);
 
         if (filteredMobs.length === 0) {
             throw new NotFoundError(`No mobs found of type: ${type}`);
@@ -30,5 +24,18 @@ export class MobService {
             await logPublisher.logMobEvent('MOBS_GET_BY_TYPE', { type: type });
         }
         return filteredMobs;
+    }
+
+    async getById(id: number): Promise<Mob> {
+        const mobs = await this.list();
+        const mob = mobs.find(mob => mob.id === Number(id));
+
+        if (!mob) {
+            throw new NotFoundError(`Mob with id ${id} not found.`);
+        }
+        else if (logPublisher) {
+            await logPublisher.logMobEvent('MOB_GET_BY_ID', { id: id });
+        }
+        return mob;
     }
 }

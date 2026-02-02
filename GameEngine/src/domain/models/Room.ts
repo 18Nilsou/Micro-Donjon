@@ -3,7 +3,7 @@ import { Position } from './Position';
 
 export interface Room {
   id: string;
-  dimensions: Dimension;
+  dimension: Dimension;
   entrance: Position;
   exit: Position;
   order: number;

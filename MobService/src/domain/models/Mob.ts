@@ -1,6 +1,7 @@
 export interface Mob {
+    id: number;
     name: string;
-    hp: number;
-    attack: number;
+    healthPoints: number;
+    attackPoints: number;
     type: 'Common' | 'Boss';
 }

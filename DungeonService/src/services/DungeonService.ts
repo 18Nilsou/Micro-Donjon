@@ -15,11 +15,11 @@ export class DungeonService {
     private readonly DUNGEON_PREFIX: string;
 
     private readonly ROOM_CONFIGS: Record<RoomType, RoomConfig> = {
-        [RoomType.SMALL]: { minWidth: 5, maxWidth: 10, minHeight: 5, maxHeight: 10, weight: 3 },
-        [RoomType.MEDIUM]: { minWidth: 10, maxWidth: 20, minHeight: 10, maxHeight: 20, weight: 4 },
-        [RoomType.LARGE]: { minWidth: 20, maxWidth: 35, minHeight: 20, maxHeight: 35, weight: 2 },
-        [RoomType.CORRIDOR]: { minWidth: 12, maxWidth: 20, minHeight: 3, maxHeight: 5, weight: 2 },
-        [RoomType.HALL]: { minWidth: 25, maxWidth: 40, minHeight: 25, maxHeight: 40, weight: 1 }
+        [RoomType.SMALL]: { minWidth: 5, maxWidth: 8, minHeight: 5, maxHeight: 8, weight: 3 },
+        [RoomType.MEDIUM]: { minWidth: 8, maxWidth: 12, minHeight: 8, maxHeight: 12, weight: 4 },
+        [RoomType.LARGE]: { minWidth: 12, maxWidth: 18, minHeight: 12, maxHeight: 18, weight: 2 },
+        [RoomType.CORRIDOR]: { minWidth: 8, maxWidth: 12, minHeight: 3, maxHeight: 5, weight: 2 },
+        [RoomType.HALL]: { minWidth: 15, maxWidth: 20, minHeight: 15, maxHeight: 20, weight: 1 }
     };
 
     private readonly MIN_ROOMS = 1;

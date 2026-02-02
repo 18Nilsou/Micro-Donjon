@@ -12,9 +12,17 @@ router.get('/mobs', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-router.get('/mobs/:type', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/mobs/type/:type', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(req, res, SERVICES.MOB, `/mobs/${req.params.type}`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/mobs/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(req, res, SERVICES.MOB, `/mobs/${req.params.id}`);
   } catch (error) {
     next(error);
   }

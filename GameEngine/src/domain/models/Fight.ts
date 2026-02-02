@@ -1,6 +1,6 @@
 export interface Fight {
   id: string;
-  heroId: number;
+  heroId: string;
   mobIds: number[];
   status: 'active' | 'heroWon' | 'heroLost' | 'fled';
   turn: 'hero' | 'mobs';

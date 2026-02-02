@@ -8,7 +8,8 @@ export class MobController {
 
   registerRoutes(app: Express) {
     app.get('/mobs', this.listAllMobs.bind(this));
-    app.get('/mobs/:type', this.getMobsByType.bind(this));
+    app.get('/mobs/type/:type', this.getMobsByType.bind(this));
+    app.get('/mobs/:id', this.getMobById.bind(this));
   }
 
   async listAllMobs(req: Request, res: Response) {
@@ -22,5 +23,13 @@ export class MobController {
     const mobs: Mob[] = await this.mobService.getByType(type);
 
     res.status(200).send(mobs);
+  }
+
+  async getMobById(req: Request, res: Response) {
+    const mobId = parseInt(req.params.id);
+
+    const mob: Mob = await this.mobService.getById(mobId);
+
+    res.status(200).send(mob);
   }
 }

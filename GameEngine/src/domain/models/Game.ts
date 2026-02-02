@@ -1,22 +1,18 @@
 import { Position } from './Position';
 import { Item } from './Item';
+import { Mob } from './Mob';
 
 export interface Game {
   id: string;
-  heroId: number;
+  heroId: string;
   dungeonId: string;
   currentRoomId: string;
   heroPosition?: Position;
+  currentFightId?: string;
   status: 'active' | 'paused' | 'completed' | 'failed';
   startTime?: string;
   lastUpdate?: string;
   score?: number;
-  mobs?: {
-    mobTypeId: number;
-    instanceId: string;
-    position: Position;
-    hp: number;
-    status: 'alive' | 'dead';
-  }[];
+  mobs?: Mob[];
   items?: Item[];
 }

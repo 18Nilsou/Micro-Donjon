@@ -4,7 +4,15 @@ import { proxyRequest } from '../utils/proxyRequest';
 
 const router = Router();
 
-// Game routes
+// Game routes - IMPORTANT: /game/start must come before /game to prevent route conflicts
+router.post('/game/start', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/game/start');
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/game', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/game');
@@ -32,14 +40,6 @@ router.put('/game', async (req: Request, res: Response, next: NextFunction) => {
 router.delete('/game', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/game');
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post('/game/start', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/game/start');
   } catch (error) {
     next(error);
   }
@@ -101,9 +101,9 @@ router.post('/dungeon', async (req: Request, res: Response, next: NextFunction) 
   }
 });
 
-router.get('/dungeon', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/dungeon/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/dungeon');
+    await proxyRequest(req, res, SERVICES.GAME_ENGINE, `/dungeon/${req.params.id}`);
   } catch (error) {
     next(error);
   }
