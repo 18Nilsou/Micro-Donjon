@@ -127,9 +127,16 @@ services:
     ports:
       - "3004:3004"
     environment:
-      - DB_URL=postgres://user:password@postgres-items:5432/items_db
+      - DB_HOST=postgres-items
+      - DB_PORT=5432
+      - DB_USERNAME=user
+      - DB_PASSWORD=password
+      - DB_NAME=items_db
+      - DB_DATABASE=items_db
+      - PORT=3004
     depends_on:
       - postgres-items
+      - rabbitmq
     networks:
       - game-network
 
