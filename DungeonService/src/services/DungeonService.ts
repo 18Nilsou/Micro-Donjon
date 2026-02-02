@@ -8,6 +8,7 @@ import { BadRequestError } from "../domain/errors/BadRequestError";
 import { NotFoundError } from "../domain/errors/NotFoundError";
 import { redisClient } from "../config/redis";
 import { v4 as uuidv4 } from "uuid";
+import { logPublisher } from "../config/logPublisher";
 
 export class DungeonService {
 
@@ -41,11 +42,19 @@ export class DungeonService {
             }
         }
 
+        if (logPublisher) {
+            await logPublisher.logDungeonEvent('DUNGEONS_LISTED', { count: dungeons.length });
+        }
+
         return dungeons;
     }
 
     async insert(name: string, numberOfRooms: number): Promise<Dungeon> {
-        return await this.generateDungeon(name, numberOfRooms);
+        const dungeon = await this.generateDungeon(name, numberOfRooms);
+        if (logPublisher) {
+            await logPublisher.logDungeonEvent('DUNGEON_INSERTED', { dungeonId: dungeon.id, name, numberOfRooms });
+        }
+        return dungeon;
     }
 
     async getById(id: string): Promise<Dungeon> {
@@ -55,6 +64,10 @@ export class DungeonService {
             throw new NotFoundError(`Dungeon with id ${id} not found.`);
         }
 
+        if (logPublisher) {
+            await logPublisher.logDungeonEvent('DUNGEON_RETRIEVED', { dungeonId: id });
+        }
+
         return JSON.parse(dungeonData);
     }
 
@@ -62,17 +75,23 @@ export class DungeonService {
         return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    private selectRoomType(): RoomType {
+    private async selectRoomType(): Promise<RoomType> {
         const totalWeight = Object.values(this.ROOM_CONFIGS).reduce((sum, config) => sum + config.weight, 0);
         let randomWeight = Math.random() * totalWeight;
 
         for (const [type, config] of Object.entries(this.ROOM_CONFIGS)) {
             randomWeight -= config.weight;
             if (randomWeight <= 0) {
+                if (logPublisher) {
+                    await logPublisher.logDungeonEvent('ROOM_TYPE_SELECTED', { roomType: type });
+                }
                 return type as RoomType;
             }
         }
 
+        if (logPublisher) {
+            logPublisher.logError(new Error("Room type selection failed, defaulting to MEDIUM"), {});
+        }
         return RoomType.MEDIUM;
     }
 
@@ -159,7 +178,15 @@ export class DungeonService {
         const dimension = this.generateRoomDimension(roomType);
         const entrance = this.generateEntrance(dimension, isFirstRoom);
         const exit = this.generateExit(dimension, entrance, isLastRoom);
-
+        if (logPublisher) {
+            await logPublisher.logDungeonEvent('ROOM_GENERATED', {
+                roomOrder: order,
+                roomType,
+                dimension,
+                entrance,
+                exit
+            });
+        }
         return {
             id: uuidv4(),
             dimension,
@@ -183,6 +210,9 @@ export class DungeonService {
         }
 
         await this.storeDungeon(dungeon);
+        if (logPublisher) {
+            await logPublisher.logDungeonEvent('DUNGEON_GENERATED', { dungeonId: dungeon.id, name, numberOfRooms });
+        }
         return dungeon;
     }
 
