@@ -31,6 +31,10 @@ flowchart TB
     Engine --> MobSvc & EngineCache
     Engine -.-> Broker{"Message Broker"}
     Engine --> ItemSvc
+    ItemSvc -.-> Broker
+    MobSvc -.-> Broker
+    DungeonSvc -.-> Broker
+    HeroSvc -.-> Broker
     Broker -.-> HeroSvc & LogSvc
     HeroSvc --> HeroDB & HeroCache
     LogSvc --> LogDB
