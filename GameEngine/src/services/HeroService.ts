@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class HeroService {
 
   private baseUrl: string = process.env.HERO_SERVICE_URL || 'http://localhost:3005';
-  private encounterChance: number = 0.15; // 15% chance of encounter per move
+  private encounterChance: number = 0.10; // 10% chance of encounter per move
 
   constructor(
     private readonly gameService: GameService,
@@ -27,7 +27,7 @@ export class HeroService {
 
     // Check if player is in a fight - movement is blocked during combat
     if (game.currentFightId) {
-      throw new Error('Cannot move while in combat');
+      return { success: true, position: game.heroPosition, roomId: game.currentRoomId };
     }
 
     // Get the dungeon to check room transitions
@@ -100,11 +100,14 @@ export class HeroService {
           const randomMobTemplate = allMobs[Math.floor(Math.random() * allMobs.length)];
 
           // Create mob instance in game state
+          const mobId = (game.mobs ? game.mobs.length : 0) + 1;
           game.mobs = game.mobs || [];
+          const mobMaxHp = randomMobTemplate.healthPoints || 20;
           game.mobs.push({
-            id: game.mobs.length + 1,
+            id: mobId,
             position: newPosition,
-            healthPoints: randomMobTemplate.healthPoints || 20,
+            healthPoints: mobMaxHp,
+            healthPointsMax: mobMaxHp,
             name: randomMobTemplate.name,
             attackPoints: randomMobTemplate.attackPoints || 5,
             status: 'alive'
@@ -114,7 +117,7 @@ export class HeroService {
           const fight: Fight = {
             id: uuidv4(),
             heroId: game.heroId,
-            mobIds: [game.mobs.length],
+            mobIds: [mobId],
             status: 'active',
             turn: 'hero',
             turnNumber: 1,
@@ -124,8 +127,9 @@ export class HeroService {
           // Save fight to service
           const createdFight = await this.fightService.startFight(fight);
 
-          // Update game with current fight
+          // Update game with current fight (need to set both ID and object)
           game.currentFightId = fight.id;
+          game.currentFight = createdFight;
           await this.gameService.save(game);
           await this.gameService.save({ ...game, id: 'current' });
 

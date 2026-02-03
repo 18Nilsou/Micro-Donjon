@@ -6,12 +6,18 @@ import axios from 'axios';
 export class FightService {
   private baseUrl: string = process.env.HERO_SERVICE_URL || 'http://localhost:3005';
   private mobServiceUrl: string = process.env.MOB_SERVICE_URL || 'http://localhost:3003';
-  private currentFight: Fight | null = null;
 
   constructor(private readonly gameService: GameService) { }
 
   async startFight(fight: Fight): Promise<Fight> {
-    this.currentFight = fight;
+    // Store fight in game state for persistence
+    const game = await this.gameService.findById('current');
+    if (game) {
+      game.currentFight = fight;
+      await this.gameService.save(game);
+      await this.gameService.save({ ...game, id: 'current' });
+    }
+
     if (logPublisher) {
       await logPublisher.logGameEvent('FIGHT_STARTED', { heroJson: 'all' });
     }
@@ -19,18 +25,23 @@ export class FightService {
   }
 
   async getFight(): Promise<Fight> {
-    if (!this.currentFight) {
+    // Retrieve fight from game state
+    const game = await this.gameService.findById('current');
+    if (!game || !game.currentFight) {
       throw new Error('No active fight');
     }
-    return this.currentFight;
+    return game.currentFight;
   }
 
   async attack(fightId: string): Promise<Fight> {
-    if (!this.currentFight || this.currentFight.id !== fightId) {
+    // Get fight from game state
+    const game = await this.gameService.findById('current');
+
+    if (!game || !game.currentFight || game.currentFight.id !== fightId) {
       throw new Error('Fight not found');
     }
 
-    const fight = this.currentFight;
+    const fight = game.currentFight;
     if (fight.status !== 'active') {
       throw new Error('Fight is not active');
     }
@@ -44,8 +55,7 @@ export class FightService {
     const hero = heroResponse.data;
 
     // Get mob from game state
-    const game = await this.gameService.findById('current');
-    if (!game || !game.mobs) {
+    if (!game.mobs) {
       throw new Error('Game or mob data not found');
     }
 
@@ -63,8 +73,6 @@ export class FightService {
     if (newMobHp <= 0) {
       mobInstance.status = 'dead';
     }
-    await this.gameService.save(game);
-    await this.gameService.save({ ...game, id: 'current' });
 
     // Add to combat log
     fight.actions = fight.actions || [];
@@ -90,6 +98,7 @@ export class FightService {
 
       // Clear fight from game state
       game.currentFightId = undefined;
+      game.currentFight = undefined;
       await this.gameService.save(game);
       await this.gameService.save({ ...game, id: 'current' });
 
@@ -97,17 +106,19 @@ export class FightService {
         await logPublisher.logGameEvent('FIGHT_WON', { heroJson: 'all', mobId: mobInstance.id });
       }
 
-      this.currentFight = null;
       return fight;
     }
 
     // Mob's turn - counter attack
-    const mobDamage = Math.max(1, (mobInstance.attackPoints || 5) - (hero.defensePoints || 0));
+    const mobDamage = Math.max(1, (mobInstance.attackPoints || 5));
     const newHeroHp = Math.max(0, hero.healthPoints - mobDamage);
 
-    // Update hero HP
-    hero.healthPoints = newHeroHp;
-    await axios.put(`${this.baseUrl}/heroes/${hero.id}`, hero);
+    // Update hero HP in HeroService
+    try {
+      await axios.put(`${this.baseUrl}/heroes/${hero.id}/healthPoints`, { healthPoints: newHeroHp });
+    } catch (error: any) {
+      throw new Error(`Failed to update hero HP: ${error.response?.data?.error || error.message}`);
+    }
 
     fight.actions.push({
       turn: fight.turnNumber || 1,
@@ -129,25 +140,36 @@ export class FightService {
         result: `${hero.name} has been defeated...`
       });
 
+      // Save final fight state with updated mob HP
+      game.currentFight = fight;
+      await this.gameService.save(game);
+      await this.gameService.save({ ...game, id: 'current' });
+
       if (logPublisher) {
         await logPublisher.logGameEvent('FIGHT_LOST', { heroJson: 'all', mobId: mobInstance.id });
       }
 
-      this.currentFight = null;
       return fight;
     }
 
     fight.turnNumber = (fight.turnNumber || 1) + 1;
-    this.currentFight = fight;
+
+    // Save updated fight to game state
+    game.currentFight = fight;
+    await this.gameService.save(game);
+    await this.gameService.save({ ...game, id: 'current' });
+
     return fight;
   }
 
   async defend(fightId: string): Promise<Fight> {
-    if (!this.currentFight || this.currentFight.id !== fightId) {
+    // Get fight from game state
+    const game = await this.gameService.findById('current');
+    if (!game || !game.currentFight || game.currentFight.id !== fightId) {
       throw new Error('Fight not found');
     }
 
-    const fight = this.currentFight;
+    const fight = game.currentFight;
     if (fight.status !== 'active') {
       throw new Error('Fight is not active');
     }
@@ -161,8 +183,7 @@ export class FightService {
     const hero = heroResponse.data;
 
     // Get mob from game state
-    const game = await this.gameService.findById('current');
-    if (!game || !game.mobs) {
+    if (!game.mobs) {
       throw new Error('Game or mob data not found');
     }
 
@@ -181,13 +202,12 @@ export class FightService {
     });
 
     // Mob attacks but damage is reduced by 50%
-    const mobDamage = Math.max(1, (mobInstance.attackPoints || 5) - (hero.defensePoints || 0));
+    const mobDamage = Math.max(1, (mobInstance.attackPoints || 5));
     const reducedDamage = Math.floor(mobDamage / 2);
     const newHeroHp = Math.max(0, hero.healthPoints - reducedDamage);
 
-    // Update hero HP
-    hero.healthPoints = newHeroHp;
-    await axios.put(`${this.baseUrl}/heroes/${hero.id}`, hero);
+    // Update hero HP in HeroService
+    await axios.put(`${this.baseUrl}/heroes/${hero.id}/healthPoints`, { healthPoints: newHeroHp });
 
     fight.actions.push({
       turn: fight.turnNumber || 1,
@@ -202,21 +222,33 @@ export class FightService {
     if (newHeroHp <= 0) {
       fight.status = 'heroLost';
       fight.endTime = new Date().toISOString();
-      this.currentFight = null;
+
+      // Save final fight state
+      game.currentFight = fight;
+      await this.gameService.save(game);
+      await this.gameService.save({ ...game, id: 'current' });
+
       return fight;
     }
 
     fight.turnNumber = (fight.turnNumber || 1) + 1;
-    this.currentFight = fight;
+
+    // Save updated fight to game state
+    game.currentFight = fight;
+    await this.gameService.save(game);
+    await this.gameService.save({ ...game, id: 'current' });
+
     return fight;
   }
 
   async flee(fightId: string): Promise<Fight> {
-    if (!this.currentFight || this.currentFight.id !== fightId) {
+    // Get fight from game state
+    const game = await this.gameService.findById('current');
+    if (!game || !game.currentFight || game.currentFight.id !== fightId) {
       throw new Error('Fight not found');
     }
 
-    const fight = this.currentFight;
+    const fight = game.currentFight;
     if (fight.status !== 'active') {
       throw new Error('Fight is not active');
     }
@@ -227,8 +259,7 @@ export class FightService {
     const hero = heroResponse.data;
 
     // Get mob from game state
-    const game = await this.gameService.findById('current');
-    if (!game || !game.mobs) {
+    if (!game.mobs) {
       throw new Error('Game or mob data not found');
     }
 
@@ -252,14 +283,14 @@ export class FightService {
 
       // Clear fight from game state
       game.currentFightId = undefined;
+      game.currentFight = undefined;
       await this.gameService.save(game);
       await this.gameService.save({ ...game, id: 'current' });
 
       if (logPublisher) {
-        await logPublisher.logGameEvent('FIGHT_FLED', { heroJson: 'all', mobId: mobInstance.id });
+        await logPublisher.logGameEvent('FIGHT_FLED', { heroJson: 'all' });
       }
 
-      this.currentFight = null;
       return fight;
     } else {
       // Failed to flee, mob gets free attack
@@ -273,8 +304,8 @@ export class FightService {
       const mobDamage = Math.max(1, (mobInstance.attackPoints || 5) - (hero.defensePoints || 0));
       const newHeroHp = Math.max(0, hero.healthPoints - mobDamage);
 
-      hero.healthPoints = newHeroHp;
-      await axios.put(`${this.baseUrl}/heroes/${hero.id}`, hero);
+      // Update hero HP in HeroService
+      await axios.put(`${this.baseUrl}/heroes/${hero.id}/healthPoints`, { healthPoints: newHeroHp });
 
       fight.actions.push({
         turn: fight.turnNumber || 1,
@@ -288,25 +319,44 @@ export class FightService {
       if (newHeroHp <= 0) {
         fight.status = 'heroLost';
         fight.endTime = new Date().toISOString();
-        this.currentFight = null;
+
+        // Save final fight state
+        game.currentFight = fight;
+        await this.gameService.save(game);
+        await this.gameService.save({ ...game, id: 'current' });
+
         return fight;
       }
 
       fight.turnNumber = (fight.turnNumber || 1) + 1;
-      this.currentFight = fight;
+
+      // Save updated fight to game state
+      game.currentFight = fight;
+      await this.gameService.save(game);
+      await this.gameService.save({ ...game, id: 'current' });
+
       return fight;
     }
   }
 
   async updateFight(updates: Partial<Fight>): Promise<Fight> {
-    if (!this.currentFight) {
+    const game = await this.gameService.findById('current');
+    if (!game || !game.currentFight) {
       throw new Error('No active fight');
     }
-    this.currentFight = { ...this.currentFight, ...updates };
-    return this.currentFight;
+    game.currentFight = { ...game.currentFight, ...updates };
+    await this.gameService.save(game);
+    await this.gameService.save({ ...game, id: 'current' });
+    return game.currentFight;
   }
 
   async deleteFight(): Promise<void> {
-    this.currentFight = null;
+    const game = await this.gameService.findById('current');
+    if (game) {
+      game.currentFight = undefined;
+      game.currentFightId = undefined;
+      await this.gameService.save(game);
+      await this.gameService.save({ ...game, id: 'current' });
+    }
   }
 }

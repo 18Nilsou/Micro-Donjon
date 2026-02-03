@@ -60,6 +60,30 @@ router.put('/hero/:heroId/move', async (req: Request, res: Response, next: NextF
 });
 
 // Fight routes
+router.post('/fight/:id/attack', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(req, res, SERVICES.GAME_ENGINE, `/fight/${req.params.id}/attack`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/fight/:id/defend', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(req, res, SERVICES.GAME_ENGINE, `/fight/${req.params.id}/defend`);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/fight/:id/flee', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(req, res, SERVICES.GAME_ENGINE, `/fight/${req.params.id}/flee`);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/fight', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/fight');

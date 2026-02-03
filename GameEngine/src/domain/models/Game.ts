@@ -1,6 +1,7 @@
 import { Position } from './Position';
 import { Item } from './Item';
 import { Mob } from './Mob';
+import { Fight } from './Fight';
 
 export interface Game {
   id: string;
@@ -9,6 +10,7 @@ export interface Game {
   currentRoomId: string;
   heroPosition?: Position;
   currentFightId?: string;
+  currentFight?: Fight;
   status: 'active' | 'paused' | 'completed' | 'failed';
   startTime?: string;
   lastUpdate?: string;

@@ -3,6 +3,7 @@
         "id": 1,
         "name": "Lenny Spider",
         "healthPoints": 100,
+        "healthPointsMax": 100,
         "attackPoints": 15,
         "type": "Common"
     },
@@ -10,6 +11,7 @@
         "id": 2,
         "name": "Dieg'Art",
         "healthPoints": 80,
+        "healthPointsMax": 80,
         "attackPoints": 10,
         "type": "Common"
     },
@@ -17,6 +19,7 @@
         "id": 3,
         "name": "Orc",
         "healthPoints": 150,
+        "healthPointsMax": 150,
         "attackPoints": 25,
         "type": "Common"
     },
@@ -24,6 +27,7 @@
         "id": 4,
         "name": "Lacaca, Eater of Pizza",
         "healthPoints": 2000,
+        "healthPointsMax": 2000,
         "attackPoints": 50,
         "type": "Boss"
     }

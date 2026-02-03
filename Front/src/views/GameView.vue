@@ -42,6 +42,28 @@ const loadGameState = async () => {
     if (gameState.value?.dungeonId) {
       currentDungeon.value = await api.getDungeon(gameState.value.dungeonId);
     }
+    
+    // Check if there's an active fight
+    if (gameState.value?.currentFightId) {
+      try {
+        currentFight.value = await api.getFight();
+        inFight.value = true;
+        
+        // Get mob from game state
+        if (gameState.value.mobs && currentFight.value.mobIds && currentFight.value.mobIds.length > 0) {
+          const mobInstance = gameState.value.mobs.find(m => m.id === currentFight.value.mobIds[0]);
+          if (mobInstance) {
+            currentMob.value = mobInstance;
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load fight state:', err);
+        // Clear fight if it failed to load
+        inFight.value = false;
+        currentFight.value = null;
+        currentMob.value = null;
+      }
+    }
   } catch (err) {
     console.error('Failed to load game state:', err);
   }

@@ -162,7 +162,7 @@ export class DungeonService {
         }
     }
 
-    private generateRoom(order: number, totalRooms: number): Room {
+    private async generateRoom(order: number, totalRooms: number): Promise<Room> {
         const isFirstRoom = order === 0;
         const isLastRoom = order === totalRooms - 1;
 
@@ -172,7 +172,7 @@ export class DungeonService {
         } else if (order === Math.floor(totalRooms / 2) && totalRooms > 5) {
             roomType = RoomType.LARGE;
         } else {
-            roomType = this.selectRoomType();
+            roomType = await this.selectRoomType();
         }
 
         const dimension = this.generateRoomDimension(roomType);
@@ -205,7 +205,7 @@ export class DungeonService {
         const roomCount = numberOfRooms;
 
         for (let i = 0; i < roomCount; i++) {
-            const room = this.generateRoom(i, roomCount);
+            const room = await this.generateRoom(i, roomCount);
             dungeon.rooms.push(room);
         }
 

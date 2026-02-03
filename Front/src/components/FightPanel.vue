@@ -65,7 +65,7 @@ const heroHealthPercent = computed(() => {
 
 const mobHealthPercent = computed(() => {
   if (!props.mob) return 0;
-  const maxHp = props.mob.healthPoints;
+  const maxHp = props.mob.healthPointsMax || 100;
   return (props.mob.healthPoints / maxHp) * 100;
 });
 </script>
@@ -105,7 +105,7 @@ const mobHealthPercent = computed(() => {
               class="health-fill enemy-health"
               :style="{ width: mobHealthPercent + '%' }"
             ></div>
-            <span class="health-text">{{ mob?.healthPoints || 0 }}/{{ mob?.healthPoints || 0 }}</span>
+            <span class="health-text">{{ mob?.healthPoints || 0 }}/{{ mob?.healthPointsMax || 0 }}</span>
           </div>
           <div class="stats">
             <span>⚔️ {{ mob?.attackPoints || 0 }}</span>
