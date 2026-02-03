@@ -179,12 +179,6 @@ const getCellIcon = (cell) => {
         <span>🧙</span> Your Hero
       </div>
       <div class="legend-item">
-        <span>👹</span> Monsters
-      </div>
-      <div class="legend-item">
-        <span>💎</span> Treasure
-      </div>
-      <div class="legend-item">
         <span>🚪</span> Exit
       </div>
     </div>

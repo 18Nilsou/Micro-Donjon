@@ -5,6 +5,7 @@ import { DungeonService } from './DungeonService';
 import { Game } from '../domain/models/Game';
 import { Hero } from '../domain/models/Hero';
 import { logPublisher } from '../config/logPublisher';
+import { NotFoundError } from '../domain/errors/NotFoundError';
 
 const DUNGEON_NAMES = [
   'Caverns of Chaos',
@@ -20,7 +21,9 @@ const DUNGEON_NAMES = [
 ];
 
 export class GameService {
+
   private baseUrl: string = process.env.HERO_SERVICE_URL || 'http://localhost:3005';
+  private readonly GAMES_KEY = 'game:';
 
   constructor(
     private readonly dungeonService: DungeonService
@@ -64,7 +67,12 @@ export class GameService {
 
   async getGame(): Promise<Game> {
     const current = await this.findById('current');
-    if (!current) throw new Error('No current game');
+    if (!current) throw new NotFoundError('No current game');
+
+    if (logPublisher) {
+      await logPublisher.logGameEvent('GAME_RETRIEVED', { heroJson: 'all' });
+    }
+
     return current;
   }
 
@@ -92,8 +100,8 @@ export class GameService {
     await redisClient.set(`game:${game.id}`, JSON.stringify(game));
   }
 
-  async findById(id: string): Promise<Game | null> {
-    const data = await redisClient.get(`game:${id}`);
+  async findById(gameId: string): Promise<Game | null> {
+    const data = await redisClient.get(`${this.GAMES_KEY}${gameId}`);
     return data ? JSON.parse(data) : null;
   }
 

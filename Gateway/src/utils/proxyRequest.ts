@@ -13,15 +13,22 @@ export const proxyRequest = async (
       url: `${serviceUrl}${path}`,
       headers: {
         'Content-Type': 'application/json',
-        ...req.headers,
+        ...(req.headers.authorization && { authorization: req.headers.authorization }),
       },
       data: req.body,
       params: req.query,
+      validateStatus: () => true,
     };
 
     const response = await axios(config);
-    res.status(response.status).json(response.data);
-  } catch (error) {
-    throw error;
+
+    if (response.data === '' || response.data === undefined || response.data === null) {
+      res.status(response.status).send();
+    } else {
+      res.status(response.status).json(response.data);
+    }
+  } catch (error: any) {
+    console.error('ProxyRequest error:', error.message);
+    res.status(500).json({ error: 'Gateway proxy error', details: error.message });
   }
 };

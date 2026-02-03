@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 export class HeroService {
 
   private baseUrl: string = process.env.HERO_SERVICE_URL || 'http://localhost:3005';
-  private encounterChance: number = 0.10; // 10% chance of encounter per move
+  private encounterChance: number = 0.05; // 5% chance of encounter per move
 
   constructor(
     private readonly gameService: GameService,
@@ -52,8 +52,10 @@ export class HeroService {
       if (nextRoom) {
         game.currentRoomId = nextRoom.id;
         game.heroPosition = nextRoom.entrance;
-        await this.gameService.save(game);
-        await this.gameService.save({ ...game, id: 'current' });
+        await Promise.all([
+          this.gameService.save(game),
+          this.gameService.save({ ...game, id: 'current' })
+        ]);
 
         if (logPublisher) {
           await logPublisher.logGameEvent('ROOM_CHANGED', { heroJson: 'all', newRoom: nextRoom.order });
@@ -69,8 +71,10 @@ export class HeroService {
       if (prevRoom) {
         game.currentRoomId = prevRoom.id;
         game.heroPosition = prevRoom.exit;
-        await this.gameService.save(game);
-        await this.gameService.save({ ...game, id: 'current' });
+        await Promise.all([
+          this.gameService.save(game),
+          this.gameService.save({ ...game, id: 'current' })
+        ]);
 
         if (logPublisher) {
           await logPublisher.logGameEvent('ROOM_CHANGED', { heroJson: 'all', newRoom: prevRoom.order });
@@ -82,8 +86,10 @@ export class HeroService {
 
     // Normal movement within the room
     game.heroPosition = newPosition;
-    await this.gameService.save(game);
-    await this.gameService.save({ ...game, id: 'current' });
+    await Promise.all([
+      this.gameService.save(game),
+      this.gameService.save({ ...game, id: 'current' })
+    ]);
 
     if (logPublisher) {
       await logPublisher.logGameEvent('HERO_MOVED', { heroJson: 'all' });
@@ -130,8 +136,10 @@ export class HeroService {
           // Update game with current fight (need to set both ID and object)
           game.currentFightId = fight.id;
           game.currentFight = createdFight;
-          await this.gameService.save(game);
-          await this.gameService.save({ ...game, id: 'current' });
+          await Promise.all([
+            this.gameService.save(game),
+            this.gameService.save({ ...game, id: 'current' })
+          ]);
 
           if (logPublisher) {
             await logPublisher.logGameEvent('ENCOUNTER', {

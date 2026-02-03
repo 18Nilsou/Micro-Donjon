@@ -82,6 +82,7 @@ const moveHero = async (x, y) => {
     
     // Check if encounter happened
     if (result.encounter?.happened && result.encounter?.fight) {
+      console.log('New encounter! Fight ID:', result.encounter.fight.id);
       currentFight.value = result.encounter.fight;
       inFight.value = true;
       
@@ -125,32 +126,56 @@ const endGame = async () => {
 };
 
 const handleFightUpdate = async (updatedFight) => {
+  console.log('Fight updated:', updatedFight.id, 'Status:', updatedFight.status);
   currentFight.value = updatedFight;
   
-  // Refresh hero data to show updated HP
+  // Check if hero died FIRST before trying to fetch deleted data
+  if (updatedFight.status === 'heroLost') {
+    error.value = 'Game Over! Your hero has fallen...';
+    // Hero is dead - go back to main screen after showing message
+    setTimeout(() => {
+      gameState.value = null;
+      gameStarted.value = false;
+      currentHero.value = null;
+      currentDungeon.value = null;
+      inFight.value = false;
+      currentFight.value = null;
+      currentMob.value = null;
+      error.value = null;
+    }, 3000);
+    return; // Don't continue with normal flow
+  }
+  
+  // Refresh hero data to show updated HP (only if hero is alive)
   if (gameState.value?.heroId) {
-    currentHero.value = await api.getHero(gameState.value.heroId);
+    try {
+      currentHero.value = await api.getHero(gameState.value.heroId);
+    } catch (err) {
+      console.error('Failed to refresh hero data:', err);
+    }
   }
   
   // Refresh mob data from game state
-  const freshGameState = await api.getGame();
-  if (freshGameState?.mobs && updatedFight.mobIds && updatedFight.mobIds.length > 0) {
-    const mobInstance = freshGameState.mobs.find(m => m.instanceId === updatedFight.mobIds[0]);
-    if (mobInstance) {
-      currentMob.value = mobInstance;
+  try {
+    const freshGameState = await api.getGame();
+    if (freshGameState?.mobs && updatedFight.mobIds && updatedFight.mobIds.length > 0) {
+      const mobInstance = freshGameState.mobs.find(m => m.id === updatedFight.mobIds[0]);
+      if (mobInstance) {
+        currentMob.value = mobInstance;
+      }
     }
+  } catch (err) {
+    console.error('Failed to refresh game state:', err);
   }
   
   // Check if fight has ended
   if (updatedFight.status !== 'active') {
     // Show result message
     if (updatedFight.status === 'heroWon') {
-      error.value = '🎉 Victory! The monster has been defeated!';
+      error.value = 'Victory! The monster has been defeated!';
       setTimeout(() => { error.value = null; }, 3000);
-    } else if (updatedFight.status === 'heroLost') {
-      error.value = '💀 Defeat... You have been slain!';
     } else if (updatedFight.status === 'fled') {
-      error.value = '🏃 You successfully fled from combat!';
+      error.value = 'You successfully fled from combat!';
       setTimeout(() => { error.value = null; }, 3000);
     }
     

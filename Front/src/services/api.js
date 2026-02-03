@@ -1,5 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-const API_TOKEN = import.meta.env.VITE_API_TOKEN || 'micro-donjon-frontend-token';
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API_TOKEN =
+  import.meta.env.VITE_API_TOKEN || "micro-donjon-frontend-token";
 
 class ApiService {
   async request(endpoint, options = {}) {
@@ -7,7 +9,7 @@ class ApiService {
     const config = {
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${API_TOKEN}`,
         ...options.headers,
       },
       ...options,
@@ -15,17 +17,21 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      
+
+      const text = await response.text();
+      const data = text ? JSON.parse(text) : null;
+
       if (response.status === 401) {
-        throw new Error('Unauthorized: Invalid API token');
+        throw new Error("Unauthorized: Invalid API token");
       }
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(
+          data?.error || `HTTP error! status: ${response.status}`,
+        );
       }
 
-      return await response.json();
-      
+      return data;
     } catch (error) {
       console.error("API request failed:", error);
       throw error;
@@ -67,6 +73,12 @@ class ApiService {
     return this.request("/heroes", {
       method: "POST",
       body: JSON.stringify(heroData),
+    });
+  }
+
+  async deleteHero(id) {
+    return this.request(`/heroes/${id}`, {
+      method: "DELETE",
     });
   }
 
