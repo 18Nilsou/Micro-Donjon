@@ -7,79 +7,80 @@ servers:
   - url: http://localhost:3002
 
 paths:
+
   /heroes:
     get:
-      summary: Get all heroes
-      tags:
-        - Heroes
+      summary: Liste tous les héros
       responses:
-              '200':
-                description: Ok
-                content:
-                  application/json:
-                    schema:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/Hero'
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
-  /hero:  
+        '200':
+          description: Liste des héros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hero'
     post:
-      summary: Create a new hero
-      tags:
-        - Hero
+      summary: Crée un nouveau héros
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Hero'
+              $ref: '#/components/schemas/CreateHeroRequest'
       responses:
-              '200':
-                description: Ok
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Hero'
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
-  /hero/{id}:
+        '201':
+          description: Héros créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hero'
+
+  /heroes/classes:
     get:
-      summary: Get a hero by id
-      tags:
-        - Hero
-      parameters:
-        - in: path
-          name: id
-          schema:
-            type: string
-          required: true
+      summary: Liste toutes les classes de héros
       responses:
-              '200':
-                description: Ok
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Hero'
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
-  /hero/{id}/healthPoints:
-    put:
-      summary: Update the health points of a hero
-      tags:
-        - Hero Stats
+        '200':
+          description: Liste des classes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Class'
+
+  /heroes/{id}:
+    get:
+      summary: Récupère un héros par son ID
       parameters:
         - in: path
           name: id
+          required: true
           schema:
             type: string
+      responses:
+        '200':
+          description: Héros trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hero'
+        '404':
+          description: Héros non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /heroes/{id}/healthPoints:
+    put:
+      summary: Met à jour les points de vie du héros
+      parameters:
+        - in: path
+          name: id
           required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -90,27 +91,28 @@ paths:
                 healthPoints:
                   type: integer
       responses:
-              '200':
-                description: Ok
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Hero'
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
-  /hero/{id}/healthPointsMax:
+        '200':
+          description: Héros mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hero'
+        '404':
+          description: Héros non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /heroes/{id}/healthPointsMax:
     put:
-      summary: Update the maximum health points of a hero
-      tags:
-        - Hero Stats
+      summary: Met à jour les points de vie max du héros
       parameters:
         - in: path
           name: id
+          required: true
           schema:
             type: string
-          required: true
       requestBody:
         required: true
         content:
@@ -118,30 +120,31 @@ paths:
             schema:
               type: object
               properties:
-                healthPoints:
+                healthPointsMax:
                   type: integer
       responses:
-              '200':
-                description: Ok
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Hero'
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
-  /hero/{id}/level:
+        '200':
+          description: Héros mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hero'
+        '404':
+          description: Héros non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /heroes/{id}/level:
     put:
-      summary: Update the level of a hero
-      tags:
-        - Hero Stats
+      summary: Met à jour le niveau du héros
       parameters:
         - in: path
           name: id
+          required: true
           schema:
             type: string
-          required: true
       requestBody:
         required: true
         content:
@@ -152,27 +155,28 @@ paths:
                 level:
                   type: integer
       responses:
-              '200':
-                description: Ok
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Hero'
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
-  /hero/{id}/attackPoints:
+        '200':
+          description: Héros mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hero'
+        '404':
+          description: Héros non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /heroes/{id}/attackPoints:
     put:
-      summary: Update the attack points of a hero
-      tags:
-        - Hero Stats
+      summary: Met à jour les points d'attaque du héros
       parameters:
         - in: path
           name: id
+          required: true
           schema:
             type: string
-          required: true
       requestBody:
         required: true
         content:
@@ -183,27 +187,28 @@ paths:
                 attackPoints:
                   type: integer
       responses:
-              '200':
-                description: Ok
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Hero'
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
-  /hero/{id}/inventory/add:
+        '200':
+          description: Héros mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hero'
+        '404':
+          description: Héros non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /heroes/{id}/inventory/add:
     post:
-      summary: Add an item to the inventory of a hero
-      tags:
-        - Hero Inventory
+      summary: Ajoute un objet à l'inventaire du héros
       parameters:
         - in: path
           name: id
+          required: true
           schema:
             type: string
-          required: true
       requestBody:
         required: true
         content:
@@ -212,31 +217,32 @@ paths:
               type: object
               properties:
                 id:
-                  type: integer
+                  type: string
                 quantity:
                   type: integer
       responses:
         '200':
-          description: Ok
+          description: Inventaire mis à jour
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Hero'
-        '400':
-          description: Bad Request
-        '500':
-          description: Internal Server Error
-  /hero/{id}/inventory:
+        '404':
+          description: Héros non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /heroes/{id}/inventory:
     put:
-      summary: Update the inventory of a hero
-      tags:
-        - Hero Inventory
+      summary: Ajoute un objet à l'inventaire du héros
       parameters:
         - in: path
           name: id
+          required: true
           schema:
             type: string
-          required: true
       requestBody:
         required: true
         content:
@@ -244,72 +250,58 @@ paths:
             schema:
               type: object
               properties:
-                inventory:
-                  type: array
-                  items:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      name:
-                        type: string
-                      quantity:
-                        type: integer
+                id:
+                  type: string
+                quantity:
+                  type: integer
       responses:
-              '200':
-                description: Ok
-                content:
-                  application/json:
-                    schema:
-                      $ref: '#/components/schemas/Hero'
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
+        '200':
+          description: Inventaire mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hero'
+        '404':
+          description: Héros non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
     get:
-      summary: Get a hero's inventory by id
-      tags:
-        - Hero Inventory
+      summary: Récupère l'inventaire du héros
       parameters:
         - in: path
           name: id
-          schema:
-            type: integer
           required: true
+          schema:
+            type: string
       responses:
-              '200':
-                description: Ok
-                content:
-                  application/json:
-                    schema:
-                      type: array
-                      items:
-                        type: object
-                        properties:
-                          id:
-                            type: integer
-                          name:
-                            type: string
-                          quantity:
-                            type: integer
-              '400':
-                description: Bad Request
-              '500':
-                description: Internal Server Error
+        '200':
+          description: Inventaire du héros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Item'
+        '404':
+          description: Héros non trouvé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   schemas:
     Hero:
       type: object
-      required: 
-        - name
-        - healthPointsMax
-        - attackPoints
-        - or
       properties:
         id:
           type: string
         name:
           type: string
+        class:
+          $ref: '#/components/schemas/Class'
         healthPoints:
           type: integer
         healthPointsMax:
@@ -321,13 +313,38 @@ components:
         inventory:
           type: array
           items:
-            type: object
-            properties:
-              id:
-                type: integer
-              name:
-                type: string
-              quantity:
-                type: integer
-        or:
+            $ref: '#/components/schemas/Item'
+    CreateHeroRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        class:
+          type: string
+      required:
+        - name
+        - class
+    Class:
+      type: object
+      properties:
+        name:
+          type: string
+        healthPoints:
           type: integer
+        attackPoints:
+          type: integer
+    Item:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+ 

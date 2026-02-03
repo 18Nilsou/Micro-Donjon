@@ -12,6 +12,14 @@ router.get('/heroes', async (req: Request, res: Response, next: NextFunction) =>
   }
 });
 
+router.post('/heroes', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(req, res, SERVICES.HERO, '/heroes');
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/heroes/classes', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(req, res, SERVICES.HERO, '/heroes/classes');
@@ -23,14 +31,6 @@ router.get('/heroes/classes', async (req: Request, res: Response, next: NextFunc
 router.get('/heroes/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(req, res, SERVICES.HERO, `/heroes/${req.params.id}`);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post('/heroes', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(req, res, SERVICES.HERO, '/heroes');
   } catch (error) {
     next(error);
   }
