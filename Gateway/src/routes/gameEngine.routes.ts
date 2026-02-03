@@ -206,6 +206,15 @@ router.get('/items', async (req: Request, res: Response, next: NextFunction) => 
   }
 });
 
+// Random item route - must be before :itemId to avoid matching "random" as an ID
+router.get('/items/random', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(req, res, SERVICES.ITEM, '/items/random');
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/items/:itemId', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(

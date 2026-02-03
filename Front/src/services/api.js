@@ -18,8 +18,9 @@ class ApiService {
     };
 
     try {
+      console.log(`[ApiService] ${JSON.stringify(config)} ${url}`);
       const response = await fetch(url, config);
-
+      console.log(`[ApiService] Response status: ${response.status}`);
       const text = await response.text();
       const data = text ? JSON.parse(text) : null;
 
@@ -64,6 +65,13 @@ class ApiService {
   // Hero endpoints
   async getHeroes() {
     return this.request("/heroes");
+  }
+
+  async addItemToHero(heroId, item) {
+    return this.request(`/heroes/${heroId}/items`, {
+      method: "POST",
+      body: JSON.stringify(item),
+    });
   }
 
   async getHeroClasses() {
@@ -153,6 +161,11 @@ class ApiService {
   // Item endpoints
   async getItems() {
     return this.request("/items");
+  }
+
+  async getRandomItem() {
+    console.log("FRONT- api.js - getRandomItem called");
+    return this.request("/items/random");
   }
 
   // Mob endpoints

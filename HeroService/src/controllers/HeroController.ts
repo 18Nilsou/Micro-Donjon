@@ -22,6 +22,7 @@ export class HeroController {
     app.put('/heroes/:id/attackPoints', this.updateHeroAttackPoints.bind(this));
     app.post('/heroes/:id/inventory/add', this.addHeroItem.bind(this));
     app.put('/heroes/:id/inventory', this.addHeroItem.bind(this));
+    app.post('/heroes/:id/inventory', this.addHeroItem.bind(this));
     app.get('/heroes/:id/inventory', this.getHeroInventory.bind(this));
   }
 

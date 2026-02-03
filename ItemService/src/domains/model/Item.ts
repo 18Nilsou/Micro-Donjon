@@ -4,7 +4,7 @@ export type ItemType = 'Weapon' | 'Consumable' | 'Armor' ;
 
 export class Item {
   
-  uuid!: string;
+  id!: number;
   
   name!: string;
   
