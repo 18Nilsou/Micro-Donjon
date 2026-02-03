@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
-import { init } from './config/dataBase';
 import { ItemService } from './services/ItemService';
 import { ItemController } from './controllers/ItemController';
 import { HTTPError } from './domains/errors/HTTPError';
@@ -24,11 +23,10 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// Initialize database and start server
+// Start server
 const startServer = async () => {
   try {
-    await init();
-    console.log('Database initialized successfully');
+    console.log('Starting ItemService with JSON file storage...');
 
     const itemService = new ItemService();
 

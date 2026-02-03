@@ -1,14 +1,18 @@
 import { Item } from "../domains/model/Item";
 import { ItemService } from "./ItemService";
 import { NotFoundError } from "../domains/errors/NotFoundError";
+import * as fs from "fs/promises";
+import * as path from "path";
 
 jest.mock('uuid', () => ({
     v4: jest.fn(() => 'test-uuid-123')
 }));
 
+jest.mock("fs/promises");
 
 describe('ItemService', () => {
     let service: ItemService;
+    const mockFs = fs as jest.Mocked<typeof fs>;
 
     const itemsData: Item[] = [
         {
@@ -31,6 +35,16 @@ describe('ItemService', () => {
         }
     ];
 
+    const itemsDataJson = itemsData.map(item => ({
+        uuid: item.uuid,
+        name: item.name,
+        effect: item.effect,
+        value: item.value,
+        description: item.description,
+        rarity: item.rarity,
+        item_type: item.itemType,
+    }));
+
     beforeEach(() => {
         service = new ItemService();
         jest.clearAllMocks();
@@ -40,7 +54,7 @@ describe('ItemService', () => {
         it('should create a new item', async () => {
             // Given
             const itemData: any = {
-                name: "Wizard",
+                name: "Wizard Staff",
                 effect: "Magic",
                 value: 200,
                 description: "A wizard staff",
@@ -48,51 +62,41 @@ describe('ItemService', () => {
                 itemType: "Weapon"
             };
 
+            mockFs.readFile.mockResolvedValue(JSON.stringify(itemsDataJson));
+            mockFs.writeFile.mockResolvedValue();
+
             // When
             const result = await service.create(itemData);
+
             // Then
             expect(result).toEqual({
                 uuid: 'test-uuid-123',
-                ...itemData
+                name: "Wizard Staff",
+                effect: "Magic",
+                value: 200,
+                description: "A wizard staff",
+                rarity: "Epic",
+                itemType: "Weapon"
             });
+            expect(mockFs.writeFile).toHaveBeenCalled();
         });
     });
 
     describe('get', () => {
         it('should retrieve an item by uuid', async () => {
             // Given
-            const mockQuery = jest.spyOn(service["pool"], 'query');
-            const item = {
-                uuid: '1',
-                name: "Heroic Sword",
-                effect: "Attack",
-                value: 100,
-                description: "A sword with heroic powers",
-                rarity: "Legendary",
-                item_type: "Weapon"
-            };
-            mockQuery.mockResolvedValue({ rows: [item] });
+            mockFs.readFile.mockResolvedValue(JSON.stringify(itemsDataJson));
 
             // When
             const result = await service.get('1');
 
             // Then
-            expect(mockQuery).toHaveBeenCalledWith(expect.any(String), ['1']);
-            expect(result).toEqual({
-                uuid: item.uuid,
-                name: item.name,
-                effect: item.effect,
-                value: item.value,
-                description: item.description,
-                rarity: item.rarity,
-                itemType: item.item_type
-            });
+            expect(result).toEqual(itemsData[0]);
         });
 
         it('should throw NotFoundError if item does not exist', async () => {
             // Given
-            const mockQuery = jest.spyOn(service["pool"], 'query');
-            mockQuery.mockResolvedValue({ rows: [] });
+            mockFs.readFile.mockResolvedValue(JSON.stringify(itemsDataJson));
 
             // When/Then
             await expect(service.get('999')).rejects.toThrow(NotFoundError);
@@ -102,122 +106,65 @@ describe('ItemService', () => {
     describe('list', () => {
         it('should list all items', async () => {
             // Given
-            const mockQuery = jest.spyOn(service["pool"], 'query');
-            const items = [
-                {
-                    uuid: '1',
-                    name: "Heroic Sword",
-                    effect: "Attack",
-                    value: 100,
-                    description: "A sword with heroic powers",
-                    rarity: "Legendary",
-                    item_type: "Weapon"
-                },
-                {
-                    uuid: '2',
-                    name: "Healing Potion",
-                    effect: "HealthPointMax",
-                    value: 50,
-                    description: "A potion that restores health",
-                    rarity: "Common",
-                    item_type: "Consumable"
-                }
-            ];
-            mockQuery.mockResolvedValue({ rows: items });
+            mockFs.readFile.mockResolvedValue(JSON.stringify(itemsDataJson));
 
             // When
             const result = await service.list();
 
             // Then
-            expect(mockQuery).toHaveBeenCalledWith(expect.any(String));
-            expect(result).toEqual(items.map(item => ({
-                uuid: item.uuid,
-                name: item.name,
-                effect: item.effect,
-                value: item.value,
-                description: item.description,
-                rarity: item.rarity,
-                itemType: item.item_type
-            })));
+            expect(result).toEqual(itemsData);
         });
     });
 
-    describe('create', () => {
-        it('should create a new item', async () => {
+    describe('getRandom', () => {
+        it('should return a random item', async () => {
             // Given
-            const mockQuery = jest.spyOn(service["pool"], 'query');
-            const itemData = {
-                name: "Wizard Staff",
-                effect: "Magic",
-                value: 200,
-                description: "A staff for wizards",
-                rarity: "Epic",
-                itemType: "Weapon"
-            };
-            const createdItem = {
-                uuid: 'test-uuid-123',
-                name: "Wizard Staff",
-                effect: "Magic",
-                value: 200,
-                description: "A staff for wizards",
-                rarity: "Epic",
-                item_type: "Weapon"
-            };
-            mockQuery.mockResolvedValue({ rows: [createdItem] });
+            mockFs.readFile.mockResolvedValue(JSON.stringify(itemsDataJson));
 
             // When
-            const result = await service.create(itemData as Item);
+            const result = await service.getRandom();
 
             // Then
-            expect(mockQuery).toHaveBeenCalledWith(expect.any(String), expect.any(Array));
-            expect(result).toEqual({
-                uuid: 'test-uuid-123',
-                name: "Wizard Staff",
-                effect: "Magic",
-                value: 200,
-                description: "A staff for wizards",
-                rarity: "Epic",
-                itemType: "Weapon"
-            });
+            expect(itemsData).toContainEqual(result);
+        });
+
+        it('should throw NotFoundError if no items found', async () => {
+            // Given
+            mockFs.readFile.mockResolvedValue(JSON.stringify([]));
+
+            // When/Then
+            await expect(service.getRandom()).rejects.toThrow(NotFoundError);
         });
     });
 
     describe('update', () => {
         it('should update an existing item', async () => {
             // Given
-            const mockQuery = jest.spyOn(service["pool"], 'query');
-            const updatedItem = {
-                uuid: '1',
+            const updatedItemData = {
                 name: "Updated Sword",
                 effect: "Attack",
                 value: 120,
                 description: "An updated sword",
                 rarity: "Legendary",
-                item_type: "Weapon",
                 itemType: "Weapon"
             };
-            mockQuery.mockResolvedValue({ rows: [updatedItem] });
+            mockFs.readFile.mockResolvedValue(JSON.stringify(itemsDataJson));
+            mockFs.writeFile.mockResolvedValue();
 
             // When
-            const result = await service.update('1', updatedItem as Item);
+            const result = await service.update('1', updatedItemData as Item);
 
             // Then
-            expect(mockQuery).toHaveBeenCalledWith(expect.any(String), expect.any(Array));
             expect(result).toEqual({
-                uuid: updatedItem.uuid,
-                name: updatedItem.name,
-                effect: updatedItem.effect,
-                value: updatedItem.value,
-                description: updatedItem.description,
-                rarity: updatedItem.rarity,
-                itemType: updatedItem.item_type
+                uuid: '1',
+                ...updatedItemData
             });
+            expect(mockFs.writeFile).toHaveBeenCalled();
         });
 
         it('should throw NotFoundError if item does not exist', async () => {
             // Given
-            const mockQuery = jest.spyOn(service["pool"], 'query');
-            mockQuery.mockResolvedValue({ rows: [] });
+            mockFs.readFile.mockResolvedValue(JSON.stringify(itemsDataJson));
 
             // When/Then
             await expect(service.update('999', {} as Item)).rejects.toThrow(NotFoundError);
@@ -227,21 +174,20 @@ describe('ItemService', () => {
     describe('delete', () => {
         it('should delete an item by uuid', async () => {
             // Given
-            const mockQuery = jest.spyOn(service["pool"], 'query');
-            mockQuery.mockResolvedValue({ rows: [{ uuid: '1' }] });
+            mockFs.readFile.mockResolvedValue(JSON.stringify(itemsDataJson));
+            mockFs.writeFile.mockResolvedValue();
 
             // When
             const result = await service.delete('1');
 
             // Then
-            expect(mockQuery).toHaveBeenCalledWith(expect.any(String), ['1']);
             expect(result).toBe(true);
+            expect(mockFs.writeFile).toHaveBeenCalled();
         });
 
         it('should throw NotFoundError if item does not exist', async () => {
             // Given
-            const mockQuery = jest.spyOn(service["pool"], 'query');
-            mockQuery.mockResolvedValue({ rows: [] });
+            mockFs.readFile.mockResolvedValue(JSON.stringify(itemsDataJson));
 
             // When/Then
             await expect(service.delete('999')).rejects.toThrow(NotFoundError);

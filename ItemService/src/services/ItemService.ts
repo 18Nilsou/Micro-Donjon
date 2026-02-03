@@ -1,52 +1,77 @@
 import { Item } from "../domains/model/Item";
 import { v4 as uuidv4 } from "uuid";
 import { NotFoundError } from "../domains/errors/NotFoundError";
-import { dbConfig } from "../config/dataBase";
 import { logPublisher } from "../config/logPublisher";
-import { Pool } from "pg";
+import * as fs from "fs/promises";
+import * as path from "path";
 
 export class ItemService {
 
-  private pool: Pool;
+  private itemsFilePath: string;
 
   constructor() {
-    this.pool = new Pool(dbConfig);
+    this.itemsFilePath = path.join(__dirname, "../../data/items.json");
+  }
+
+  private async readItems(): Promise<Item[]> {
+    try {
+      const data = await fs.readFile(this.itemsFilePath, "utf-8");
+      const items = JSON.parse(data);
+      return items.map((item: any) => ({
+        uuid: item.uuid,
+        name: item.name,
+        effect: item.effect,
+        value: item.value,
+        description: item.description,
+        rarity: item.rarity,
+        itemType: item.item_type,
+      }));
+    } catch (error) {
+      console.error("Error reading items file:", error);
+      return [];
+    }
+  }
+
+  private async writeItems(items: Item[]): Promise<void> {
+    try {
+      const data = items.map(item => ({
+        uuid: item.uuid,
+        name: item.name,
+        effect: item.effect,
+        value: item.value,
+        description: item.description,
+        rarity: item.rarity,
+        item_type: item.itemType,
+      }));
+      await fs.writeFile(this.itemsFilePath, JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.error("Error writing items file:", error);
+      throw error;
+    }
   }
 
   async getRandom(): Promise<Item> {
-    const query = `SELECT i.uuid, i.name, i.effect, i.value, i.description, i.rarity, i.item_type
-                   FROM items i
-                   ORDER BY RANDOM()
-                   LIMIT 1`;
-    const { rows } = await this.pool.query(query);
+    const items = await this.readItems();
 
-    if (rows.length === 0) {
+    if (items.length === 0) {
       throw new NotFoundError('No items found');
     }
 
+    const randomIndex = Math.floor(Math.random() * items.length);
+    const item = items[randomIndex];
+
     if (logPublisher) {
-      await logPublisher.logItemEvent('ITEMS_RETRIEVED', { itemId: rows[0].uuid });
+      await logPublisher.logItemEvent('ITEMS_RETRIEVED', { itemId: item.uuid });
     }
 
-    const row = rows[0];
-    return {
-      uuid: row.uuid,
-      name: row.name,
-      effect: row.effect,
-      value: row.value,
-      description: row.description,
-      rarity: row.rarity,
-      itemType: row.item_type,
-    };
+    return item;
   }
 
   async get(uuid: string): Promise<Item> {
-    const query = `SELECT i.uuid, i.name, i.effect, i.value, i.description, i.rarity, i.item_type
-                   FROM items i
-                   WHERE i.uuid = $1`;
-    const { rows } = await this.pool.query(query, [uuid]);
+    const items = await this.readItems();
+    const item = items.find(item => item.uuid === uuid);
 
-    if (rows.length === 0) {
+    if (!item) {
       throw new NotFoundError('Item not found');
     }
 
@@ -54,116 +79,81 @@ export class ItemService {
       await logPublisher.logItemEvent('ITEMS_RETRIEVED', { itemId: uuid });
     }
 
-    const row = rows[0];
-    return {
-      uuid: row.uuid,
-      name: row.name,
-      effect: row.effect,
-      value: row.value,
-      description: row.description,
-      rarity: row.rarity,
-      itemType: row.item_type,
-    };
+    return item;
   }
 
   async list(): Promise<Item[]> {
-    const query = `SELECT i.uuid, i.name, i.effect, i.value, i.description, i.rarity, i.item_type
-                   FROM items i`;
-    const { rows } = await this.pool.query(query);
+    const items = await this.readItems();
 
     if (logPublisher) {
       await logPublisher.logItemEvent('ITEMS_RETRIEVED', { itemId: "all" });
     }
 
-    return rows.map(row => ({
-      uuid: row.uuid,
-      name: row.name,
-      effect: row.effect,
-      value: row.value,
-      description: row.description,
-      rarity: row.rarity,
-      itemType: row.item_type,
-    }));
+    return items;
   }
 
   async create(item: Item): Promise<Item> {
-    const query = `INSERT INTO items (uuid, name, effect, value, description, rarity, item_type)
-                   VALUES ($1, $2, $3, $4, $5, $6, $7)
-                   RETURNING uuid, name, effect, value, description, rarity, item_type`;
+    const items = await this.readItems();
     const uuid = uuidv4();
-    const values = [
+    
+    const newItem: Item = {
       uuid,
-      item.name,
-      item.effect,
-      item.value,
-      item.description || null,
-      item.rarity,
-      item.itemType
-    ];
+      name: item.name,
+      effect: item.effect,
+      value: item.value,
+      description: item.description,
+      rarity: item.rarity,
+      itemType: item.itemType
+    };
 
-    const { rows } = await this.pool.query(query, values);
-    const row = rows[0];
+    items.push(newItem);
+    await this.writeItems(items);
 
     if (logPublisher) {
-      await logPublisher.logItemEvent('ITEMS_CREATED', { itemId: row.uuid });
+      await logPublisher.logItemEvent('ITEMS_CREATED', { itemId: uuid });
     }
 
-    return {
-      uuid: row.uuid,
-      name: row.name,
-      effect: row.effect,
-      value: row.value,
-      description: row.description,
-      rarity: row.rarity,
-      itemType: row.item_type,
-    };
+    return newItem;
   }
 
   async update(uuid: string, item: Item): Promise<Item> {
-    const query = `UPDATE items
-                   SET name = $1, effect = $2, value = $3, description = $4, rarity = $5, item_type = $6
-                   WHERE uuid = $7
-                   RETURNING uuid, name, effect, value, description, rarity, item_type`;
-    const values = [
-      item.name,
-      item.effect,
-      item.value,
-      item.description || null,
-      item.rarity,
-      item.itemType,
-      uuid
-    ];
+    const items = await this.readItems();
+    const itemIndex = items.findIndex(i => i.uuid === uuid);
 
-    const { rows } = await this.pool.query(query, values);
-
-    if (rows.length === 0) {
+    if (itemIndex === -1) {
       throw new NotFoundError('Item not found');
     }
 
-    const row = rows[0];
+    const updatedItem: Item = {
+      uuid,
+      name: item.name,
+      effect: item.effect,
+      value: item.value,
+      description: item.description,
+      rarity: item.rarity,
+      itemType: item.itemType
+    };
+
+    items[itemIndex] = updatedItem;
+    await this.writeItems(items);
 
     if (logPublisher) {
-      await logPublisher.logItemEvent('ITEMS_UPDATED', { itemId: row.uuid });
+      await logPublisher.logItemEvent('ITEMS_UPDATED', { itemId: uuid });
     }
 
-    return {
-      uuid: row.uuid,
-      name: row.name,
-      effect: row.effect,
-      value: row.value,
-      description: row.description,
-      rarity: row.rarity,
-      itemType: row.item_type,
-    };
+    return updatedItem;
   }
 
   async delete(uuid: string): Promise<boolean> {
-    const query = `DELETE FROM items WHERE uuid = $1 RETURNING uuid`;
-    const { rows } = await this.pool.query(query, [uuid]);
+    const items = await this.readItems();
+    const itemIndex = items.findIndex(i => i.uuid === uuid);
 
-    if (rows.length === 0) {
+    if (itemIndex === -1) {
       throw new NotFoundError('Item not found');
     }
+
+    items.splice(itemIndex, 1);
+    await this.writeItems(items);
 
     if (logPublisher) {
       await logPublisher.logItemEvent('ITEMS_DELETED', { itemId: uuid });

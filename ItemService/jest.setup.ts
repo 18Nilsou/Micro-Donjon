@@ -1,9 +1,1 @@
-import { dbConfig, init, destroy } from './src/config/dataBase';
-
-beforeAll(async () => {
-  await init();
-});
-
-afterAll(async () => {
-  await destroy();
-});
+// Database setup removed - using JSON file storage instead

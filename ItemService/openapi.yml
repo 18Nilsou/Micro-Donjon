@@ -61,18 +61,17 @@ paths:
         '500':
           description: Erreur interne du serveur
 
-  /items/{uuid}:
+  /items/{id}:
     get:
-      summary: Récupérer un item par son UUID
+      summary: Récupérer un item par son id
       tags:
         - Items
       parameters:
-        - name: uuid
+        - name: id
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: number
       responses:
         '200':
           description: Détails de l'item
@@ -89,12 +88,11 @@ paths:
       tags:
         - Items
       parameters:
-        - name: uuid
+        - name: id
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: number
       requestBody:
         required: true
         content:
@@ -119,12 +117,11 @@ paths:
       tags:
         - Items
       parameters:
-        - name: uuid
+        - name: id
           in: path
           required: true
           schema:
-            type: string
-            format: uuid
+            type: number
       responses:
         '204':
           description: Item supprimé avec succès
@@ -138,13 +135,12 @@ components:
 
     Item:
       type: object
-      required: [uuid, name, effect, value, rarity, itemType]
+      required: [id, name, effect, value, rarity, itemType]
       properties:
-        uuid:
-          type: string
-          format: uuid
-          description: Identifiant unique de l'item (UUID).
-          example: "b7e23ec2-8b7a-4c2a-9c1a-1e2b3c4d5e6f"
+        id:
+          type: number
+          description: Identifiant unique de l'item (id).
+          example: 1
         name:
           type: string
           description: Nom de l'item.
@@ -173,7 +169,7 @@ components:
           enum: [Weapon, Consumable, Armor]
           example: "Weapon"
       example:
-        uuid: "b7e23ec2-8b7a-4c2a-9c1a-1e2b3c4d5e6f"
+        id: 1
         name: "Iron Sword"
         effect: "Attack"
         value: 10

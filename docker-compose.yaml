@@ -39,19 +39,6 @@ services:
     networks:
       - game-network
 
-  # Base de Données pour les Items (Relationnelle pour gestion structurée)
-  postgres-items:
-    image: postgres:alpine
-    container_name: postgres-items
-    environment:
-      POSTGRES_DB: items_db
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
-    networks:
-      - game-network
-
   # Database pour les Logs (Relationnelle car structurée chronologiquement)
   postgres-log:
     image: postgres:alpine
@@ -141,16 +128,7 @@ services:
     container_name: item-service
     ports:
       - "3004:3004"
-    environment:
-      - DB_HOST=postgres-items
-      - DB_PORT=5432
-      - DB_USERNAME=user
-      - DB_PASSWORD=password
-      - DB_NAME=items_db
-      - DB_DATABASE=items_db
-      - PORT=3004
     depends_on:
-      - postgres-items
       - rabbitmq
     networks:
       - game-network
