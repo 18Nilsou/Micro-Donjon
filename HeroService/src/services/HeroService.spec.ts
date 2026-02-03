@@ -100,7 +100,7 @@ describe('HeroService', () => {
             mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
 
             // When
-            const result = await service.updateHealthPoints('1', 50, 'user-1');
+            const result = await service.updateHealthPoints('1', 50);
 
             // Then
             expect(result.healthPoints).toBe(50);
@@ -112,7 +112,7 @@ describe('HeroService', () => {
             mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
 
             // When
-            const result = await service.updateHealthPoints('1', 150, 'user-1');
+            const result = await service.updateHealthPoints('1', 150);
 
             // Then
             expect(result.healthPoints).toBe(100);
@@ -139,7 +139,7 @@ describe('HeroService', () => {
             mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
 
             // When
-            const result = await service.updateLevel('1', 'user-1');
+            const result = await service.updateLevel('1');
 
             // Then
             expect(result.level).toBe(2);

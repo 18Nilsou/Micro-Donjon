@@ -89,8 +89,8 @@ export class HeroController {
   async deleteHero(req: Request, res: Response) {
     const heroId = req.params.id;
     try {
-      const userId = this.getUserIdFromRequest(req);
-      await this.heroService.delete(heroId, userId);
+      // const userId = this.getUserIdFromRequest(req);
+      await this.heroService.delete(heroId);
       res.status(200).send({ message: 'Hero deleted successfully' });
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -105,8 +105,8 @@ export class HeroController {
     const heroId = req.params.id;
     const { healthPoints } = req.body;
     try {
-      const userId = this.getUserIdFromRequest(req);
-      const updatedHero: Hero = await this.heroService.updateHealthPoints(heroId, healthPoints, userId);
+      // const userId = this.getUserIdFromRequest(req);
+      const updatedHero: Hero = await this.heroService.updateHealthPoints(heroId, healthPoints);
       res.status(200).send(updatedHero);
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -136,8 +136,8 @@ export class HeroController {
   async updateHeroLevel(req: Request, res: Response) {
     const heroId = req.params.id;
     try {
-      const userId = this.getUserIdFromRequest(req);
-      const updatedHero: Hero = await this.heroService.updateLevel(heroId, userId);
+      // const userId = this.getUserIdFromRequest(req);
+      const updatedHero: Hero = await this.heroService.updateLevel(heroId);
       res.status(200).send(updatedHero);
     } catch (error) {
       if (error instanceof NotFoundError) {

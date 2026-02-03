@@ -114,19 +114,14 @@ export class HeroService {
         return hero;
     }
 
-    async delete(heroId: string, requestingUserId: string): Promise<void> {
-        const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
+    async delete(heroId: string): Promise<void> {
+        const heroData = await this.getById(heroId);
 
         if (!heroData) {
             throw new NotFoundError(`Hero with id ${heroId} not found.`);
         }
 
-        const hero = JSON.parse(heroData) as Hero;
-
-        // Verify ownership
-        if (hero.userId !== requestingUserId) {
-            throw new ForbiddenError(`Access denied: You don't own this hero.`);
-        }
+        const hero = heroData;
 
         await redisClient.del(`${this.HEROES_KEY}${heroId}`);
         await redisClient.sRem(this.HEROES_KEY, heroId);
@@ -153,8 +148,12 @@ export class HeroService {
         return hero;
     }
 
-    async updateHealthPoints(heroId: string, healthPoints: number, requestingUserId: string): Promise<Hero> {
-        const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
+    async updateHealthPoints(heroId: string, healthPoints: number): Promise<Hero> {
+        const heroData = await this.getById(heroId);
+
+        if (!heroData) throw new NotFoundError(`Hero with id ${heroId} not found.`);
+
+        const hero = heroData;
 
         const oldHealthPoints = hero.healthPoints;
 
@@ -202,8 +201,12 @@ export class HeroService {
         return hero;
     }
 
-    async updateLevel(heroId: string, requestingUserId: string): Promise<Hero> {
-        const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
+    async updateLevel(heroId: string): Promise<Hero> {
+        const heroData = await this.getById(heroId);
+
+        if (!heroData) throw new NotFoundError(`Hero with id ${heroId} not found.`);
+
+        const hero = heroData;
 
         const oldLevel = hero.level;
         hero.level = oldLevel + 1;
