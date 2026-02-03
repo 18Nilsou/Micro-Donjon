@@ -67,16 +67,18 @@ services:
 
   # --- MICRO-SERVICES ---
 
-  # Frontend
-  # front:
-  #   build: ./Front
-  #   container_name: front
-  #   ports:
-  #     - "8080:80"
-  #   depends_on:
-  #     - gateway
-  #   networks:
-  #     - game-network
+  front:
+    build: ./Front
+    container_name: front
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_API_URL=http://localhost:3000/api
+      - VITE_API_TOKEN=micro-donjon-frontend-token-secure-2024
+    depends_on: 
+      - gateway
+    networks:
+      - game-network
 
   gateway:
     build: ./Gateway
@@ -84,6 +86,7 @@ services:
     ports:
       - "3000:3000"
     environment:
+      - API_TOKEN=micro-donjon-frontend-token-secure-2024
       - HERO_SERVICE_URL=http://hero-service:3002
       - ENGINE_SERVICE_URL=http://game-engine:3001
       - DUNGEON_SERVICE_URL=http://dungeon-service:3003

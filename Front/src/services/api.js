@@ -1,5 +1,5 @@
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API_TOKEN = import.meta.env.VITE_API_TOKEN || 'micro-donjon-frontend-token';
 
 class ApiService {
   async request(endpoint, options = {}) {
@@ -7,6 +7,7 @@ class ApiService {
     const config = {
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${API_TOKEN}`,
         ...options.headers,
       },
       ...options,
@@ -14,10 +15,17 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
+      
+      if (response.status === 401) {
+        throw new Error('Unauthorized: Invalid API token');
+      }
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
+
       return await response.json();
+      
     } catch (error) {
       console.error("API request failed:", error);
       throw error;

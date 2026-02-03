@@ -13,6 +13,7 @@ import mobRoutes from './routes/mob.routes';
 import itemRoutes from './routes/item.routes';
 import logRoutes from './routes/log.routes';
 import healthRoutes from './routes/health.routes';
+import { authMiddleware } from './middleware/auth';
 
 dotenv.config();
 
@@ -24,7 +25,7 @@ app.use(express.json());
 const file = fs.readFileSync('./openapi.yaml', 'utf8');
 const swaggerDocument = YAML.parse(file);
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
+app.use('/api', authMiddleware);
 // Routes
 app.use('/api', gameEngineRoutes);
 app.use('/api', heroRoutes);
