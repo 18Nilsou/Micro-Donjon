@@ -8,10 +8,10 @@ export class ItemController {
   registerRoutes(app: Express) {
     app.get('/items', this.listAllItems.bind(this));
     app.get('/items/random', this.getRandom.bind(this));
-    app.get('/items/:uuid', this.get.bind(this));
+    app.get('/items/:id', this.get.bind(this));
     app.post('/items', this.createItem.bind(this));
-    app.put('/items/:uuid', this.updateItem.bind(this));
-    app.delete('/items/:uuid', this.deleteItem.bind(this));
+    app.put('/items/:id', this.updateItem.bind(this));
+    app.delete('/items/:id', this.deleteItem.bind(this));
   }
 
   async getRandom(req: Request, res: Response, next: NextFunction) {
@@ -34,8 +34,8 @@ export class ItemController {
 
   async get(req: Request, res: Response, next: NextFunction) {
     try {
-      const uuid: string = req.params.uuid;
-      const item: Item = await this.itemService.get(uuid);
+      const id: number = parseInt(req.params.id, 10);
+      const item: Item = await this.itemService.get(id);
       res.status(200).json(item);
     } catch (e) {
       next(e);
@@ -54,9 +54,9 @@ export class ItemController {
 
   async updateItem(req: Request, res: Response, next: NextFunction) {
     try {
-      const uuid: string = req.params.uuid;
+      const id: number = parseInt(req.params.id, 10);
       const item: Item = req.body;
-      const updated = await this.itemService.update(uuid, item);
+      const updated = await this.itemService.update(id, item);
       res.status(200).json(updated);
     } catch (e) {
       next(e);
@@ -65,8 +65,8 @@ export class ItemController {
 
   async deleteItem(req: Request, res: Response, next: NextFunction) {
     try {
-      const uuid: string = req.params.uuid;
-      await this.itemService.delete(uuid);
+      const id: number = parseInt(req.params.id, 10);
+      await this.itemService.delete(id);
       res.status(204).send();
     } catch (e) {
       next(e);

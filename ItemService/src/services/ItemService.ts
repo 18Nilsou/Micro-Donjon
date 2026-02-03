@@ -18,7 +18,7 @@ export class ItemService {
       const data = await fs.readFile(this.itemsFilePath, "utf-8");
       const items = JSON.parse(data);
       return items.map((item: any) => ({
-        uuid: item.uuid,
+        id: item.id,
         name: item.name,
         effect: item.effect,
         value: item.value,
@@ -35,7 +35,7 @@ export class ItemService {
   private async writeItems(items: Item[]): Promise<void> {
     try {
       const data = items.map(item => ({
-        uuid: item.uuid,
+        id: item.id,
         name: item.name,
         effect: item.effect,
         value: item.value,
@@ -61,22 +61,22 @@ export class ItemService {
     const item = items[randomIndex];
 
     if (logPublisher) {
-      await logPublisher.logItemEvent('ITEMS_RETRIEVED', { itemId: item.uuid });
+      await logPublisher.logItemEvent('ITEMS_RETRIEVED', { itemId: item.id });
     }
 
     return item;
   }
 
-  async get(uuid: string): Promise<Item> {
+  async get(id: number): Promise<Item> {
     const items = await this.readItems();
-    const item = items.find(item => item.uuid === uuid);
+    const item = items.find(item => item.id === id);
 
     if (!item) {
       throw new NotFoundError('Item not found');
     }
 
     if (logPublisher) {
-      await logPublisher.logItemEvent('ITEMS_RETRIEVED', { itemId: uuid });
+      await logPublisher.logItemEvent('ITEMS_RETRIEVED', { itemId: id });
     }
 
     return item;
@@ -94,10 +94,10 @@ export class ItemService {
 
   async create(item: Item): Promise<Item> {
     const items = await this.readItems();
-    const uuid = uuidv4();
+    const id = items.length > 0 ? Math.max(...items.map(i => i.id)) + 1 : 1;
     
     const newItem: Item = {
-      uuid,
+      id,
       name: item.name,
       effect: item.effect,
       value: item.value,
@@ -110,22 +110,22 @@ export class ItemService {
     await this.writeItems(items);
 
     if (logPublisher) {
-      await logPublisher.logItemEvent('ITEMS_CREATED', { itemId: uuid });
+      await logPublisher.logItemEvent('ITEMS_CREATED', { itemId: id });
     }
 
     return newItem;
   }
 
-  async update(uuid: string, item: Item): Promise<Item> {
+  async update(id: number, item: Item): Promise<Item> {
     const items = await this.readItems();
-    const itemIndex = items.findIndex(i => i.uuid === uuid);
+    const itemIndex = items.findIndex(i => i.id === id);
 
     if (itemIndex === -1) {
       throw new NotFoundError('Item not found');
     }
 
     const updatedItem: Item = {
-      uuid,
+      id,
       name: item.name,
       effect: item.effect,
       value: item.value,
@@ -138,15 +138,15 @@ export class ItemService {
     await this.writeItems(items);
 
     if (logPublisher) {
-      await logPublisher.logItemEvent('ITEMS_UPDATED', { itemId: uuid });
+      await logPublisher.logItemEvent('ITEMS_UPDATED', { itemId: id });
     }
 
     return updatedItem;
   }
 
-  async delete(uuid: string): Promise<boolean> {
+  async delete(id: number): Promise<boolean> {
     const items = await this.readItems();
-    const itemIndex = items.findIndex(i => i.uuid === uuid);
+    const itemIndex = items.findIndex(i => i.id === id);
 
     if (itemIndex === -1) {
       throw new NotFoundError('Item not found');
@@ -156,7 +156,7 @@ export class ItemService {
     await this.writeItems(items);
 
     if (logPublisher) {
-      await logPublisher.logItemEvent('ITEMS_DELETED', { itemId: uuid });
+      await logPublisher.logItemEvent('ITEMS_DELETED', { itemId: id });
     }
 
     return true;

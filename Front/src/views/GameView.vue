@@ -173,6 +173,16 @@ const handleFightUpdate = async (updatedFight) => {
     // Show result message
     if (updatedFight.status === 'heroWon') {
       error.value = 'Victory! The monster has been defeated!';
+      
+      try {
+        const item = await api.getRandomItem();
+        await api.addItemToHero(currentHero.value.id, { id: item.id, quantity: 1 });
+        currentHero.value = await api.getHero(currentHero.value.id);
+        error.value = `Victory! You obtained: ${item.name}!`;
+      } catch (err) {
+        console.error('Erreur lors de l\'ajout de l\'item au héros :', err);
+      }
+    
       setTimeout(() => { error.value = null; }, 3000);
     } else if (updatedFight.status === 'fled') {
       error.value = 'You successfully fled from combat!';

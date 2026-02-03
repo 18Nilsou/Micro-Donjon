@@ -66,6 +66,13 @@ class ApiService {
     return this.request("/heroes");
   }
 
+  async addItemToHero(heroId, item) {
+    return this.request(`/heroes/${heroId}/items`, {
+      method: "POST",
+      body: JSON.stringify(item),
+    });
+  }
+
   async getHeroClasses() {
     return this.request("/heroes/classes");
   }
@@ -153,6 +160,10 @@ class ApiService {
   // Item endpoints
   async getItems() {
     return this.request("/items");
+  }
+
+  async getRandomItem() {
+    return this.request("/items/random");
   }
 
   // Mob endpoints
