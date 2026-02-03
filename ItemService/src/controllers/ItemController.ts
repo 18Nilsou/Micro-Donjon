@@ -7,10 +7,20 @@ export class ItemController {
 
   registerRoutes(app: Express) {
     app.get('/items', this.listAllItems.bind(this));
+    app.get('/items/random', this.getRandom.bind(this));
     app.get('/items/:uuid', this.get.bind(this));
     app.post('/items', this.createItem.bind(this));
     app.put('/items/:uuid', this.updateItem.bind(this));
     app.delete('/items/:uuid', this.deleteItem.bind(this));
+  }
+
+  async getRandom(req: Request, res: Response, next: NextFunction) {
+    try {
+      const item: Item = await this.itemService.getRandom();
+      res.status(200).json(item);
+    } catch (e) {
+      next(e);
+    }
   }
 
   async listAllItems(req: Request, res: Response, next: NextFunction) {

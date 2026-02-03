@@ -13,6 +13,33 @@ export class ItemService {
     this.pool = new Pool(dbConfig);
   }
 
+  async getRandom(): Promise<Item> {
+    const query = `SELECT i.uuid, i.name, i.effect, i.value, i.description, i.rarity, i.item_type
+                   FROM items i
+                   ORDER BY RANDOM()
+                   LIMIT 1`;
+    const { rows } = await this.pool.query(query);
+
+    if (rows.length === 0) {
+      throw new NotFoundError('No items found');
+    }
+
+    if (logPublisher) {
+      await logPublisher.logItemEvent('ITEMS_RETRIEVED', { itemId: rows[0].uuid });
+    }
+
+    const row = rows[0];
+    return {
+      uuid: row.uuid,
+      name: row.name,
+      effect: row.effect,
+      value: row.value,
+      description: row.description,
+      rarity: row.rarity,
+      itemType: row.item_type,
+    };
+  }
+
   async get(uuid: string): Promise<Item> {
     const query = `SELECT i.uuid, i.name, i.effect, i.value, i.description, i.rarity, i.item_type
                    FROM items i
