@@ -12,8 +12,8 @@ router.get('/items', async (req: Request, res: Response, next: NextFunction) => 
   }
 });
 
+// Route spécifique AVANT la route générique avec paramètre
 router.get('/items/random', async (req: Request, res: Response, next: NextFunction) => {
-  console.log("GATEWAY - item.routes.ts - /items/random called");
   try {
     await proxyRequest(req, res, SERVICES.ITEM, '/items/random');
   } catch (error) {

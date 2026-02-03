@@ -175,15 +175,11 @@ const handleFightUpdate = async (updatedFight) => {
       error.value = 'Victory! The monster has been defeated!';
       
       try {
-        console.log('FRONT - GameView.vue - handleFightUpdate - requesting random item');
         const item = await api.getRandomItem();
-        console.log('Random item received:', item);
-        
         await api.addItemToHero(currentHero.value.id, { id: item.id, quantity: 1 });
         currentHero.value = await api.getHero(currentHero.value.id);
         error.value = `Victory! You obtained: ${item.name}!`;
       } catch (err) {
-        console.error('Error adding item to hero:', err);
         error.value = `Victory! But failed to get item: ${err.message}`;
       }
     

@@ -164,7 +164,6 @@ class ApiService {
   }
 
   async getRandomItem() {
-    console.log("FRONT- api.js - getRandomItem called");
     return this.request("/items/random");
   }
 
