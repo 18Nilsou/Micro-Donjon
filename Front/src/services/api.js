@@ -1,15 +1,17 @@
+import { authService } from "./auth";
+
 const API_BASE_URL =
   import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-const API_TOKEN =
-  import.meta.env.VITE_API_TOKEN || "micro-donjon-frontend-token";
 
 class ApiService {
   async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
+    const token = authService.getToken();
+    
     const config = {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${API_TOKEN}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
       ...options,
@@ -22,12 +24,15 @@ class ApiService {
       const data = text ? JSON.parse(text) : null;
 
       if (response.status === 401) {
-        throw new Error("Unauthorized: Invalid API token");
+        // Token expired or invalid, logout and redirect
+        authService.logout();
+        window.location.href = "/auth";
+        throw new Error("Session expirée, veuillez vous reconnecter");
       }
 
       if (!response.ok) {
         throw new Error(
-          data?.error || `HTTP error! status: ${response.status}`,
+          data?.error || data?.message || `HTTP error! status: ${response.status}`,
         );
       }
 

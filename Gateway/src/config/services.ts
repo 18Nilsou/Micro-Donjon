@@ -5,6 +5,7 @@ export interface Services {
   ITEM: string;
   MOB: string;
   LOG: string;
+  AUTH: string;
 }
 
 export const SERVICES: Services = {
@@ -14,4 +15,5 @@ export const SERVICES: Services = {
   ITEM: process.env.ITEM_SERVICE_URL || 'http://item-service:3004',
   MOB: process.env.MOB_SERVICE_URL || 'http://mob-service:3006',
   LOG: process.env.LOG_SERVICE_URL || 'http://log-service:3005',
+  AUTH: process.env.AUTH_SERVICE_URL || 'http://auth-service:3007',
 };

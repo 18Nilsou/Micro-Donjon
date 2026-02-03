@@ -1,6 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import api from '../services/api';
+import { authService } from '../services/auth';
 
 const emit = defineEmits(['start-game']);
 
@@ -23,15 +24,23 @@ const selectedHeroId = ref(null);
 const selectedDungeonId = ref(null);
 const loading = ref(false);
 const error = ref(null);
+const currentUser = ref(authService.getUser());
 
 // Create new hero form
 const showCreateHero = ref(false);
 const newHeroName = ref('');
 const newHeroClass = ref(null);
 
+// Check if user already has a linked hero
+const userHeroId = computed(() => currentUser.value?.hero_id || null);
+
 const loadHeroes = async () => {
     try {
         heroes.value = await api.getHeroes();
+        // If user has a linked hero, pre-select it
+        if (userHeroId.value) {
+            selectedHeroId.value = userHeroId.value;
+        }
     } catch (err) {
         console.error('Failed to load heroes:', err);
     }
@@ -56,8 +65,14 @@ const createHero = async () => {
             name: newHeroName.value,
             class: classes.value.filter(classItem => classItem.name === newHeroClass.value)[0] || null,
         };
-        await api.createHero(heroData);
+        const newHero = await api.createHero(heroData);
+        
+        // Link the new hero to the user
+        await authService.linkHero(newHero.id);
+        currentUser.value = authService.getUser();
+        
         await loadHeroes();
+        selectedHeroId.value = newHero.id;
         showCreateHero.value = false;
         newHeroName.value = '';
         newHeroClass.value = classes.value.length > 0 ? classes.value[0].name : null;
@@ -85,6 +100,20 @@ const createDungeon = async () => {
         error.value = 'Failed to create dungeon: ' + err.message;
     } finally {
         loading.value = false;
+    }
+};
+
+const selectHero = async (heroId) => {
+    selectedHeroId.value = heroId;
+    
+    // Link the selected hero to the user if different from current
+    if (userHeroId.value !== heroId) {
+        try {
+            await authService.linkHero(heroId);
+            currentUser.value = authService.getUser();
+        } catch (err) {
+            console.error('Failed to link hero:', err);
+        }
     }
 };
 
@@ -133,11 +162,12 @@ onMounted(async () => {
 
                 <div class="selection-grid">
                     <div v-for="hero in heroes" :key="hero.id"
-                        :class="['selection-card', { selected: selectedHeroId === hero.id }]"
-                        @click="selectedHeroId = hero.id">
+                        :class="['selection-card', { selected: selectedHeroId === hero.id, 'user-hero': userHeroId === hero.id }]"
+                        @click="selectHero(hero.id)">
                         <div class="card-body">
                             <div class="card-name">{{ hero.name }}</div>
                             <div class="card-detail">{{ hero.class || 'Adventurer' }}</div>
+                            <div v-if="userHeroId === hero.id" class="my-hero-badge">Mon Héros</div>
                             <div class="card-stats" v-if="hero.healthPoints">
                                 <div class="stat-label">Health</div>
                                 <div class="stat-value">{{ hero.healthPoints }} / {{ hero.healthPointsMax }}</div>
@@ -367,6 +397,23 @@ onMounted(async () => {
     text-transform: uppercase;
     letter-spacing: 1px;
     margin-bottom: 15px;
+}
+
+.my-hero-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #ffd700, #ffaa00);
+    color: #1e1e2e;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.selection-card.user-hero {
+    border-color: rgba(255, 215, 0, 0.5);
 }
 
 .card-stats {

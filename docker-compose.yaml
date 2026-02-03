@@ -12,6 +12,27 @@ services:
 
   # --- DONNÉES ---
 
+  # Database MariaDB pour l'authentification
+  mariadb-auth:
+    image: mariadb:10.11
+    container_name: mariadb-auth
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: auth_db
+      MYSQL_USER: auth_user
+      MYSQL_PASSWORD: auth_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb-auth-data:/var/lib/mysql
+    networks:
+      - game-network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Cache 1: Données temporaires du Jeu (Game Engine)
   redis-game:
     image: redis:alpine
@@ -74,9 +95,13 @@ services:
       - "3000:3000"
     environment:
       - API_TOKEN=micro-donjon-frontend-token-secure-2024
+      - JWT_SECRET=micro-donjon-jwt-secret-key-2024
       - HERO_SERVICE_URL=http://hero-service:3002
       - ENGINE_SERVICE_URL=http://game-engine:3001
       - DUNGEON_SERVICE_URL=http://dungeon-service:3003
+      - AUTH_SERVICE_URL=http://auth-service:3007
+    depends_on:
+      - auth-service
     networks:
       - game-network
 
@@ -155,6 +180,29 @@ services:
     networks:
       - game-network
 
+  auth-service:
+    build: ./AuthService
+    container_name: auth-service
+    ports:
+      - "3007:3007"
+    environment:
+      - PORT=3007
+      - DB_HOST=mariadb-auth
+      - DB_PORT=3306
+      - DB_USER=auth_user
+      - DB_PASSWORD=auth_password
+      - DB_NAME=auth_db
+      - JWT_SECRET=micro-donjon-jwt-secret-key-2024
+      - JWT_EXPIRES_IN=24h
+    depends_on:
+      mariadb-auth:
+        condition: service_healthy
+    networks:
+      - game-network
+
 networks:
   game-network:
     driver: bridge
+
+volumes:
+  mariadb-auth-data:
