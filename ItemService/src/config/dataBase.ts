@@ -22,6 +22,18 @@ export async function init() {
           item_type VARCHAR(100) NOT NULL
       );
   `);
+
+  const itemsData = require('../../data/items.json');
+
+  for (const item of itemsData) {
+    const res = await pool.query('SELECT * FROM items WHERE uuid = $1', [item.uuid]);
+    if (res.rows.length === 0) {
+      await pool.query(
+        'INSERT INTO items (uuid, name, description, value, rarity, effect, item_type) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [item.uuid, item.name, item.description, item.value, item.rarity, item.effect, item.item_type]
+      );
+    }
+  }
 }
 
 
