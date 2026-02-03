@@ -9,6 +9,7 @@ import { HeroController } from "./controllers/HeroController";
 import { errorHandler } from "./errorHandling";
 import { connectRedis, redisClient } from './config/redis';
 import { initLogPublisher } from './config/logPublisher';
+import { connectToRabbitMQ, setHeroService } from './config/messageConsumer';
 
 dotenv.config();
 
@@ -32,12 +33,12 @@ app.get('/health', async (req, res) => {
     timestamp: new Date().toISOString(),
     redis_connected: redisClient?.isOpen || false
   };
-  
+
   if (!redisClient?.isOpen) {
     health.status = 'degraded';
     return res.status(503).json(health);
   }
-  
+
   res.status(200).json(health);
 });
 
@@ -49,7 +50,10 @@ async function startServer() {
   try {
     await connectRedis();
     await initLogPublisher();
-    
+
+    setHeroService(heroService);
+    await connectToRabbitMQ();
+
     app.listen(port, () => {
       console.log(`Server listening on http://localhost:${port}`);
       console.log(`Swagger docs at http://localhost:${port}/docs`);

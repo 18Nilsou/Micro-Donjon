@@ -22,7 +22,8 @@ export class FightController {
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized: User ID not found' });
       }
-      const result = await this.fightService.attack(id, userId);
+      const hero = req.body;
+      const result = await this.fightService.attack(id, userId, hero);
       return res.status(200).json(result);
     } catch (error) {
       return res.status(400).json({ error: (error as Error).message });
@@ -36,7 +37,8 @@ export class FightController {
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized: User ID not found' });
       }
-      const result = await this.fightService.defend(id, userId);
+      const hero = req.body;
+      const result = await this.fightService.defend(id, userId, hero);
       return res.status(200).json(result);
     } catch (error) {
       return res.status(400).json({ error: (error as Error).message });
@@ -50,7 +52,8 @@ export class FightController {
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized: User ID not found' });
       }
-      const result = await this.fightService.flee(id, userId);
+      const hero = req.body;
+      const result = await this.fightService.flee(id, userId, hero);
       return res.status(200).json(result);
     } catch (error) {
       return res.status(400).json({ error: (error as Error).message });

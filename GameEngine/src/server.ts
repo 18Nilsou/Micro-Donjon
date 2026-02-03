@@ -32,7 +32,7 @@ app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 const dungeonService = new DungeonService();
 const mobService = new MobService();
 const itemService = new ItemService();
-const gameService = new GameService(dungeonService);
+const gameService = new GameService(dungeonService, itemService);
 const fightService = new FightService(gameService);
 const heroService = new HeroService(gameService, dungeonService, mobService, fightService);
 

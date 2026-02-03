@@ -48,10 +48,10 @@ class ApiService {
     return this.request("/game");
   }
 
-  async startGame(heroId) {
+  async startGame(hero, dungeon) {
     return this.request("/game/start", {
       method: "POST",
-      body: JSON.stringify({ heroId }),
+      body: JSON.stringify({ hero, dungeon }),
     });
   }
 
@@ -129,21 +129,24 @@ class ApiService {
     });
   }
 
-  async attackInFight(fightId) {
+  async attackInFight(fightId, hero) {
     return this.request(`/fight/${fightId}/attack`, {
       method: "POST",
+      body: JSON.stringify(hero),
     });
   }
 
-  async defendInFight(fightId) {
+  async defendInFight(fightId, hero) {
     return this.request(`/fight/${fightId}/defend`, {
       method: "POST",
+      body: JSON.stringify(hero),
     });
   }
 
-  async fleeFromFight(fightId) {
+  async fleeFromFight(fightId, hero) {
     return this.request(`/fight/${fightId}/flee`, {
       method: "POST",
+      body: JSON.stringify(hero),
     });
   }
 

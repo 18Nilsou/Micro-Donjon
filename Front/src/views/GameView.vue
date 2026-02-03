@@ -16,11 +16,11 @@ const inFight = ref(false);
 const currentFight = ref(null);
 const currentMob = ref(null);
 
-const startNewGame = async (heroId) => {
+const startNewGame = async ({ hero, dungeon }) => {
   loading.value = true;
   error.value = null;
   try {
-    await api.startGame(heroId);
+    await api.startGame(hero, dungeon);
     await loadGameState();
     gameStarted.value = true;
   } catch (err) {

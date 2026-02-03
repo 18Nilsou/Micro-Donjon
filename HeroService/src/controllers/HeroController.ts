@@ -37,12 +37,12 @@ export class HeroController {
     try {
       const userId = req.params.userId;
       const requestingUserId = this.getUserIdFromRequest(req);
-      
+
       // Verify that user is requesting their own heroes
       if (userId !== requestingUserId) {
         return res.status(403).send({ error: 'Access denied: You can only view your own heroes' });
       }
-      
+
       const heroes: Hero[] = await this.heroService.listByUserId(userId);
       res.status(200).send(heroes);
     } catch (error) {
@@ -135,10 +135,9 @@ export class HeroController {
 
   async updateHeroLevel(req: Request, res: Response) {
     const heroId = req.params.id;
-    const { level } = req.body;
     try {
       const userId = this.getUserIdFromRequest(req);
-      const updatedHero: Hero = await this.heroService.updateLevel(heroId, level, userId);
+      const updatedHero: Hero = await this.heroService.updateLevel(heroId, userId);
       res.status(200).send(updatedHero);
     } catch (error) {
       if (error instanceof NotFoundError) {

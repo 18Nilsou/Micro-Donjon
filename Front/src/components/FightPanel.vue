@@ -28,10 +28,9 @@ const getCurrentFight = () => {
 };
 
 const attack = async () => {
-  if (!props.fight) return;
-  console.log('Attacking with fight ID:', props.fight.id);
+  if (!props.fight || !props.hero) return;
   try {
-    const updatedFight = await api.attackInFight(props.fight.id);
+    const updatedFight = await api.attackInFight(props.fight.id, props.hero);
     if (updatedFight) {
       emit('fightUpdated', updatedFight);
     } else {
@@ -52,9 +51,9 @@ const attack = async () => {
 };
 
 const defend = async () => {
-  if (!props.fight) return;
+  if (!props.fight || !props.hero) return;
   try {
-    const updatedFight = await api.defendInFight(props.fight.id);
+    const updatedFight = await api.defendInFight(props.fight.id, props.hero);
     if (updatedFight) {
       emit('fightUpdated', updatedFight);
     } else {
@@ -73,9 +72,9 @@ const defend = async () => {
 };
 
 const flee = async () => {
-  if (!props.fight) return;
+  if (!props.fight || !props.hero) return;
   try {
-    const updatedFight = await api.fleeFromFight(props.fight.id);
+    const updatedFight = await api.fleeFromFight(props.fight.id, props.hero);
     if (updatedFight) {
       emit('fightUpdated', updatedFight);
     } else {

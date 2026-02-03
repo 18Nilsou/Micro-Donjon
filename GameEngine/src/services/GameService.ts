@@ -6,6 +6,10 @@ import { Game } from '../domain/models/Game';
 import { Hero } from '../domain/models/Hero';
 import { logPublisher } from '../config/logPublisher';
 import { NotFoundError } from '../domain/errors/NotFoundError';
+import { ItemService } from './ItemService';
+import { Item } from '../domain/models/Item';
+import { Dungeon } from '../domain/models/Dungeon';
+import { heroEventPublisher } from '../config/heroEventPublisher';
 
 const DUNGEON_NAMES = [
   'Caverns of Chaos',
@@ -22,20 +26,16 @@ const DUNGEON_NAMES = [
 
 export class GameService {
 
-  private baseUrl: string = process.env.HERO_SERVICE_URL || 'http://localhost:3002';
   private readonly GAMES_KEY = 'game:';
 
   constructor(
-    private readonly dungeonService: DungeonService
+    private readonly dungeonService: DungeonService,
+    private readonly itemService: ItemService
   ) { }
 
-  async startGame(heroId: string, userId: string): Promise<Game> {
-    const heroResponse = await axios.get<Hero>(`${this.baseUrl}/heroes/${heroId}`, {
-      headers: {
-        'x-user-id': userId
-      }
-    });
-    const hero = heroResponse.data;
+  async startGame(hero: Hero, dungeon: Dungeon): Promise<Game> {
+    // const heroResponse = await axios.get<Hero>(`${this.baseUrl}/heroes/${heroId}`);
+    // const hero = heroResponse.data;
 
     // Automatically generate a new dungeon for this game
     const randomName = DUNGEON_NAMES[Math.floor(Math.random() * DUNGEON_NAMES.length)];
@@ -45,7 +45,7 @@ export class GameService {
       name: randomName,
       numberOfRooms: randomRooms
     };
-    const dungeon = await this.dungeonService.generateDungeon(dungeonRequest);
+    // const dungeon = await this.dungeonService.generateDungeon(dungeonRequest);
 
     const game: Game = {
       id: uuidv4(),
@@ -63,7 +63,7 @@ export class GameService {
     // Set current game
     await this.save({ ...game, id: 'current' });
     if (logPublisher) {
-      await logPublisher.logGameEvent('GAME_STARTED', { heroJson: JSON.stringify(hero) });
+      await logPublisher.logGameEvent('GAME_STARTED', { gameJson: JSON.stringify(game) });
     }
 
     return game;
@@ -74,7 +74,7 @@ export class GameService {
     if (!current) throw new NotFoundError('No current game');
 
     if (logPublisher) {
-      await logPublisher.logGameEvent('GAME_RETRIEVED', { heroJson: 'all' });
+      await logPublisher.logGameEvent('GAME_RETRIEVED', { gameJson: 'all' });
     }
 
     return current;
@@ -86,7 +86,7 @@ export class GameService {
     await this.save(updated);
     await this.save({ ...updated, id: 'current' });
     if (logPublisher) {
-      await logPublisher.logGameEvent('GAME_UPDATED', { heroJson: 'all' });
+      await logPublisher.logGameEvent('GAME_UPDATED', { gameJson: 'all' });
     }
     return updated;
   }
@@ -96,7 +96,7 @@ export class GameService {
     await this.delete(current.id);
     await this.delete('current');
     if (logPublisher) {
-      await logPublisher.logGameEvent('GAME_DELETED', { heroJson: 'all' });
+      await logPublisher.logGameEvent('GAME_DELETED', { gameJson: 'all' });
     }
   }
 
@@ -119,5 +119,13 @@ export class GameService {
 
   async delete(id: string): Promise<void> {
     await redisClient.del(`game:${id}`);
+  }
+
+  async updateLevel(heroId: string): Promise<void> {
+    await heroEventPublisher.publishHeroLevelUp(heroId);
+  }
+
+  async getRandomItem(): Promise<Item> {
+    return this.itemService.getRandomItem();
   }
 }

@@ -3,7 +3,7 @@ import { Item } from '../domain/models/Item';
 
 export class ItemService {
 
-  private baseUrl: string = `${process.env.ITEM_SERVICE_URL || 'http://item-service:3004'}/api`;
+  private baseUrl: string = process.env.ITEM_SERVICE_URL || 'http://localhost:3004';
 
   async getItems(): Promise<Item[]> {
     const response = await axios.get(`${this.baseUrl}/items`);
@@ -12,6 +12,11 @@ export class ItemService {
 
   async getItem(id: number): Promise<Item> {
     const response = await axios.get(`${this.baseUrl}/items/${id}`);
+    return response.data;
+  }
+
+  async getRandomItem(): Promise<Item> {
+    const response = await axios.get(`${this.baseUrl}/items/random`);
     return response.data;
   }
 }

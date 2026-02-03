@@ -82,7 +82,7 @@ const createDungeon = async () => {
             numberOfRooms: rooms,
         };
         const dungeon = await api.createDungeon(dungeonData);
-        selectedDungeonId.value = dungeon.id;
+        return dungeon;
     } catch (err) {
         error.value = 'Failed to create dungeon: ' + err.message;
     } finally {
@@ -95,7 +95,9 @@ const startGame = async () => {
         error.value = 'Please select a hero';
         return;
     }
-    emit('start-game', selectedHeroId.value);
+    const dungeon = await createDungeon();
+    const selectedHero = heroes.value.find(h => h.id === selectedHeroId.value);
+    emit('start-game', { hero: selectedHero, dungeon: dungeon });
 };
 
 onMounted(async () => {

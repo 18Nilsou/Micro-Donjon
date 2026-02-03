@@ -173,4 +173,14 @@ export class HeroService {
     const response = await axios.get(`${this.baseUrl}/heroes/${id}`);
     return response.data;
   }
+
+  async getInventory(heroId: string): Promise<Hero> {
+    const response = await axios.get(`${this.baseUrl}/heroes/${heroId}/inventory`);
+    return response.data;
+  }
+
+  async updateInventory(heroId: string, itemId: string, quantity: number): Promise<Hero> {
+    const response = await axios.post(`${this.baseUrl}/heroes/${heroId}/inventory/add`, { id: itemId, quantity });
+    return response.data;
+  }
 }

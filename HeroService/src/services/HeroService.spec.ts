@@ -52,7 +52,7 @@ describe('HeroService', () => {
                 name: "Wizard",
                 healthPointsMax: 80,
                 attackPoints: 20,
-                or: 100
+                gold: 100
             };
 
             // When
@@ -67,7 +67,7 @@ describe('HeroService', () => {
                 level: 1,
                 attackPoints: 20,
                 inventory: [],
-                or: 100
+                gold: 100
             });
             expect(mockRedisClient.set).toHaveBeenCalled();
         });
@@ -139,10 +139,10 @@ describe('HeroService', () => {
             mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
 
             // When
-            const result = await service.updateLevel('1', 10, 'user-1');
+            const result = await service.updateLevel('1', 'user-1');
 
             // Then
-            expect(result.level).toBe(10);
+            expect(result.level).toBe(2);
             expect(mockRedisClient.set).toHaveBeenCalled();
         });
     });

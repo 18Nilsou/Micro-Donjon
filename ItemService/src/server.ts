@@ -1,5 +1,8 @@
 import 'reflect-metadata';
 import express, { Request, Response, NextFunction } from 'express';
+import * as fs from "node:fs";
+import * as YAML from 'yaml';
+import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
 import { ItemService } from './services/ItemService';
 import { ItemController } from './controllers/ItemController';
@@ -12,6 +15,11 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
+
+const file = fs.readFileSync(require.resolve('../openapi.yml'), 'utf8')
+const swaggerDocument = YAML.parse(file)
+
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Error handling middleware
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
@@ -40,6 +48,7 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
       console.log(`ItemService running on port ${PORT}`);
+      console.log(`Swagger docs at http://localhost:${PORT}/docs`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);

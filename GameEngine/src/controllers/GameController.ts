@@ -15,12 +15,12 @@ export class GameController {
 
   async createGame(req: Request, res: Response) {
     try {
-      const { heroId } = req.body;
+      const { hero, dungeon } = req.body;
       const userId = req.headers['x-user-id'] as string;
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized: User ID not found' });
       }
-      const game = await this.gameService.startGame(heroId, userId);
+      const game = await this.gameService.startGame(hero, dungeon, userId);
       res.status(201).json(game);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
@@ -29,12 +29,12 @@ export class GameController {
 
   async startGame(req: Request, res: Response) {
     try {
-      const { heroId } = req.body;
+      const { hero, dungeon } = req.body;
       const userId = req.headers['x-user-id'] as string;
       if (!userId) {
         return res.status(401).json({ error: 'Unauthorized: User ID not found' });
       }
-      const game = await this.gameService.startGame(heroId, userId);
+      const game = await this.gameService.startGame(hero, dungeon, userId);
       res.status(201).json(game);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });

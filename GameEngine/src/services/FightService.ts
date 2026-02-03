@@ -1,11 +1,11 @@
 import { logPublisher } from "../config/logPublisher";
+import { heroEventPublisher } from "../config/heroEventPublisher";
 import { Fight } from "../domain/models/Fight";
 import { GameService } from "./GameService";
 import axios from 'axios';
+import { Hero } from "../domain/models/Hero";
 
 export class FightService {
-  private baseUrl: string = process.env.HERO_SERVICE_URL || 'http://localhost:3002';
-  private mobServiceUrl: string = process.env.MOB_SERVICE_URL || 'http://localhost:3003';
 
   constructor(private readonly gameService: GameService) { }
 
@@ -40,7 +40,8 @@ export class FightService {
     return game.currentFight;
   }
 
-  async attack(fightId: string, userId: string): Promise<Fight> {
+  async attack(fightId: string, hero: Hero): Promise<Fight> {
+    // Get fight from game state
     const game = await this.gameService.findById('current');
 
     if (!game || !game.currentFight || game.currentFight.id !== fightId) {
@@ -56,11 +57,7 @@ export class FightService {
       throw new Error('Not hero turn');
     }
 
-    const heroResponse = await axios.get(`${this.baseUrl}/heroes/${fight.heroId}`, {
-      headers: { 'x-user-id': userId }
-    });
-    const hero = heroResponse.data;
-
+    // Get mob from game state
     if (!game.mobs) {
       throw new Error('Game or mob data not found');
     }
@@ -101,12 +98,13 @@ export class FightService {
       game.currentFightId = undefined;
       game.currentFight = undefined;
       await Promise.all([
+        heroEventPublisher.publishHeroLevelUp(hero.id),
         this.gameService.save(game),
         this.gameService.save({ ...game, id: 'current' })
       ]);
 
       if (logPublisher) {
-        await logPublisher.logGameEvent('FIGHT_WON', { heroJson: 'all', mobId: mobInstance.id });
+        await logPublisher.logGameEvent('FIGHT_WON', { gameJson: 'all', mobId: mobInstance.id });
       }
 
       return fight;
@@ -115,11 +113,8 @@ export class FightService {
     const mobDamage = Math.max(1, (mobInstance.attackPoints || 5));
     const newHeroHp = Math.max(0, hero.healthPoints - mobDamage);
 
-    const updatedHero = await axios.put(`${this.baseUrl}/heroes/${hero.id}/healthPoints`, 
-      { healthPoints: newHeroHp },
-      { headers: { 'x-user-id': userId } }
-    );
-
+    // Publish hero HP update to message queue
+    await heroEventPublisher.publishHeroUpdate(hero.id, newHeroHp);
 
     fight.actions.push({
       turn: fight.turnNumber || 1,
@@ -130,7 +125,8 @@ export class FightService {
       result: `${mobInstance.name || 'Monster'} attacks ${hero.name} for ${mobDamage} damage!`
     });
 
-    if (updatedHero.data.healthPoints <= 0) {
+    // Check if hero is dead
+    if (newHeroHp <= 0) {
       fight.status = 'heroLost';
       fight.endTime = new Date().toISOString();
       fight.actions.push({
@@ -140,17 +136,14 @@ export class FightService {
         result: `${hero.name} has been defeated...`
       });
 
-      try {
-        await axios.delete(`${this.baseUrl}/heroes/${hero.id}`);
-      } catch (error: any) {
-        console.error('Failed to delete hero:', error.message);
-      }
+      // Publish hero delete event to message queue
+      await heroEventPublisher.publishHeroDelete(hero.id);
 
       await this.gameService.delete('current');
       await this.gameService.delete(game.id);
 
       if (logPublisher) {
-        await logPublisher.logGameEvent('FIGHT_LOST', { heroJson: 'all', mobId: mobInstance.id });
+        await logPublisher.logGameEvent('FIGHT_LOST', { gameJson: 'all', mobId: mobInstance.id });
         await logPublisher.logGameEvent('GAME_OVER', { heroId: hero.id });
       }
 
@@ -168,7 +161,8 @@ export class FightService {
     return fight;
   }
 
-  async defend(fightId: string, userId: string): Promise<Fight> {
+  async defend(fightId: string, hero: Hero): Promise<Fight> {
+    // Get fight from game state
     const game = await this.gameService.findById('current');
     if (!game || !game.currentFight || game.currentFight.id !== fightId) {
       throw new Error('Fight not found');
@@ -182,11 +176,6 @@ export class FightService {
     if (fight.turn !== 'hero') {
       throw new Error('Not hero turn');
     }
-
-    const heroResponse = await axios.get(`${this.baseUrl}/heroes/${fight.heroId}`, {
-      headers: { 'x-user-id': userId }
-    });
-    const hero = heroResponse.data;
 
     if (!game.mobs) {
       throw new Error('Game or mob data not found');
@@ -209,10 +198,8 @@ export class FightService {
     const reducedDamage = Math.floor(mobDamage / 2);
     const newHeroHp = Math.max(0, hero.healthPoints - reducedDamage);
 
-    const updatedHero = await axios.put(`${this.baseUrl}/heroes/${hero.id}/healthPoints`, 
-      { healthPoints: newHeroHp },
-      { headers: { 'x-user-id': userId } }
-    );
+    // Publish hero HP update to message queue
+    await heroEventPublisher.publishHeroUpdate(hero.id, newHeroHp);
 
     fight.actions.push({
       turn: fight.turnNumber || 1,
@@ -223,7 +210,8 @@ export class FightService {
       result: `${mobInstance.name || 'Monster'} attacks but ${hero.name} blocks some damage! (${reducedDamage} damage)`
     });
 
-    if (updatedHero.data.healthPoints <= 0) {
+    // Check if hero is dead (unlikely when defending)
+    if (newHeroHp <= 0) {
       fight.status = 'heroLost';
       fight.endTime = new Date().toISOString();
       fight.actions.push({
@@ -233,17 +221,14 @@ export class FightService {
         result: `${hero.name} has been defeated...`
       });
 
-      try {
-        await axios.delete(`${this.baseUrl}/heroes/${hero.id}`);
-      } catch (error: any) {
-        console.error('Failed to delete hero:', error.message);
-      }
+      // Publish hero delete event to message queue
+      await heroEventPublisher.publishHeroDelete(hero.id);
 
       await this.gameService.delete('current');
       await this.gameService.delete(game.id);
 
       if (logPublisher) {
-        await logPublisher.logGameEvent('FIGHT_LOST', { heroJson: 'all' });
+        await logPublisher.logGameEvent('FIGHT_LOST', { gameJson: 'all' });
         await logPublisher.logGameEvent('GAME_OVER', { heroId: hero.id });
       }
 
@@ -261,7 +246,8 @@ export class FightService {
     return fight;
   }
 
-  async flee(fightId: string, userId: string): Promise<Fight> {
+  async flee(fightId: string, hero: Hero): Promise<Fight> {
+    // Get fight from game state
     const game = await this.gameService.findById('current');
     if (!game || !game.currentFight || game.currentFight.id !== fightId) {
       throw new Error('Fight not found');
@@ -273,10 +259,6 @@ export class FightService {
     }
 
     const fleeRoll = Math.random();
-    const heroResponse = await axios.get(`${this.baseUrl}/heroes/${fight.heroId}`, {
-      headers: { 'x-user-id': userId }
-    });
-    const hero = heroResponse.data;
 
     if (!game.mobs) {
       throw new Error('Game or mob data not found');
@@ -307,7 +289,7 @@ export class FightService {
       ]);
 
       if (logPublisher) {
-        await logPublisher.logGameEvent('FIGHT_FLED', { heroJson: 'all' });
+        await logPublisher.logGameEvent('FIGHT_FLED', { gameJson: 'all' });
       }
 
       return fight;
@@ -322,10 +304,8 @@ export class FightService {
       const mobDamage = Math.max(1, (mobInstance.attackPoints || 5));
       const newHeroHp = Math.max(0, hero.healthPoints - mobDamage);
 
-      const updatedHero = await axios.put(`${this.baseUrl}/heroes/${hero.id}/healthPoints`, 
-        { healthPoints: newHeroHp },
-        { headers: { 'x-user-id': userId } }
-      );
+      // Publish hero HP update to message queue
+      await heroEventPublisher.publishHeroUpdate(hero.id, newHeroHp);
 
       fight.actions.push({
         turn: fight.turnNumber || 1,
@@ -336,7 +316,7 @@ export class FightService {
         result: `${mobInstance.name || 'Monster'} takes advantage and attacks for ${mobDamage} damage!`
       });
 
-      if (updatedHero.data.healthPoints <= 0) {
+      if (newHeroHp <= 0) {
         fight.status = 'heroLost';
         fight.endTime = new Date().toISOString();
         fight.actions.push({
@@ -346,42 +326,41 @@ export class FightService {
           result: `${hero.name} has been defeated...`
         });
 
-        try {
-          await axios.delete(`${this.baseUrl}/heroes/${hero.id}`, {
-            headers: { 'x-user-id': userId }
-          });
-        } catch (error: any) {
-          console.error('Failed to delete hero:', error.message);
-        }
+        // Publish hero delete event to message queue
+        await heroEventPublisher.publishHeroDelete(hero.id);
 
         await this.gameService.delete('current');
         await this.gameService.delete(game.id);
 
         if (logPublisher) {
-          await logPublisher.logGameEvent('FIGHT_LOST', { heroJson: 'all' });
+          await logPublisher.logGameEvent('FIGHT_LOST', { gameJson: 'all' });
           await logPublisher.logGameEvent('GAME_OVER', { heroId: hero.id });
         }
 
         return fight;
       }
-
-      fight.turnNumber = (fight.turnNumber || 1) + 1;
-
-      game.currentFight = fight;
-      await Promise.all([
-        this.gameService.save(game),
-        this.gameService.save({ ...game, id: 'current' })
-      ]);
-
-      return fight;
     }
+
+    // Delete game state (game over)
+    await this.gameService.delete('current');
+    await this.gameService.delete(game.id);
+
+    if (logPublisher) {
+      await logPublisher.logGameEvent('FIGHT_LOST', { gameJson: 'all' });
+      await logPublisher.logGameEvent('GAME_OVER', { heroId: hero.id });
+    }
+
+    return fight;
   }
+
 
   async updateFight(updates: Partial<Fight>): Promise<Fight> {
     const game = await this.gameService.findById('current');
+
     if (!game || !game.currentFight) {
       throw new Error('No active fight');
     }
+
     game.currentFight = { ...game.currentFight, ...updates };
     await Promise.all([
       this.gameService.save(game),
@@ -392,9 +371,11 @@ export class FightService {
 
   async deleteFight(): Promise<void> {
     const game = await this.gameService.findById('current');
+
     if (game) {
       game.currentFight = undefined;
       game.currentFightId = undefined;
+
       await Promise.all([
         this.gameService.save(game),
         this.gameService.save({ ...game, id: 'current' })

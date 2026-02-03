@@ -115,6 +115,7 @@ services:
       - RABBITMQ_URL=amqp://rabbitmq
       - HERO_SERVICE_URL=http://hero-service:3002
       - DUNGEON_SERVICE_URL=http://dungeon-service:3003
+      - ITEM_SERVICE_URL=http://item-service:3004
       - MOB_SERVICE_URL=http://mob-service:3006
     depends_on:
       - redis-game

@@ -202,11 +202,20 @@ export class HeroService {
         return hero;
     }
 
-    async updateLevel(heroId: string, level: number, requestingUserId: string): Promise<Hero> {
+    async updateLevel(heroId: string, requestingUserId: string): Promise<Hero> {
         const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
 
         const oldLevel = hero.level;
-        hero.level = level;
+        hero.level = oldLevel + 1;
+
+        const oldAttackPoints = hero.attackPoints;
+        hero.attackPoints = oldAttackPoints + 10;
+
+        const oldHealthPointsMax = hero.healthPointsMax;
+        hero.healthPointsMax = oldHealthPointsMax + 20;
+
+        const oldHealthPoints = hero.healthPoints;
+        hero.healthPoints = oldHealthPoints + 20;
 
         await redisClient.set(
             `${this.HEROES_KEY}${hero.id}`,
@@ -217,7 +226,7 @@ export class HeroService {
             await logPublisher.logHeroEvent('LEVEL_UPDATED', {
                 heroId,
                 oldLevel,
-                newLevel: level
+                newLevel: hero.level
             });
         }
 
@@ -239,7 +248,7 @@ export class HeroService {
             await logPublisher.logHeroEvent('ATTACK_POINTS_UPDATED', {
                 heroId,
                 oldAttackPoints,
-                newAttackPoints: attackPoints
+                newAttackPoints: hero.attackPoints
             });
         }
 
