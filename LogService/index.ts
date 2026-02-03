@@ -63,13 +63,7 @@ async function connectToRabbitMQ(): Promise<void> {
     const queue = await channel.assertQueue('logs_queue', { durable: true });
 
     const routingKeys: string[] = [
-      'hero.*',
-      'game.*',
-      'dungeon.*',
-      'item.*',
-      'mob.*',
-      'auth.*',
-      'error.*'
+      'log.*'
     ];
 
     for (const routingKey of routingKeys) {

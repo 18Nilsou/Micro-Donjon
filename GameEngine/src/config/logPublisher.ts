@@ -81,7 +81,7 @@ export class LogPublisher {
     }
 
     async logGameEvent(action: string, gameData: any, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-        await this.publishLog('game.' + action.toLowerCase(), {
+        await this.publishLog('log.game.' + action.toLowerCase(), {
             service: 'GAME_SERVICE',
             action: action,
             message: `Game event: ${action}`,
@@ -94,8 +94,8 @@ export class LogPublisher {
     }
 
     async logError(service: string, error: any, context: any = {}, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-        await this.publishLog('error.' + service.toLowerCase(), {
-            service: service.toUpperCase() + '_SERVICE',
+        await this.publishLog('log.error.game' + service.toLowerCase(), {
+            service: 'GAME_SERVICE',
             action: 'ERROR_OCCURRED',
             message: error.message || 'Unknown error',
             level: 'ERROR',

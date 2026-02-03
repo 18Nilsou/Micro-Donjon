@@ -81,7 +81,7 @@ export class LogPublisher {
   }
 
   async logMobEvent(action: string, mobData: any, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-    await this.publishLog('mob.' + action.toLowerCase(), {
+    await this.publishLog('log.mob.' + action.toLowerCase(), {
       service: 'MOB_SERVICE',
       action: action,
       message: `Mob event: ${action}`,
@@ -94,9 +94,9 @@ export class LogPublisher {
   }
 
   async logError(action: string, error: any, context: any = {}, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-    await this.publishLog('error.' + "MOB_SERVICE".toLowerCase(), {
+    await this.publishLog('log.error.' + "MOB_SERVICE".toLowerCase(), {
       service: 'MOB_SERVICE',
-      action: 'ERROR_OCCURRED',
+      action: 'ERROR_OCCURRED - '+ action,
       message: error.message || 'Unknown error',
       level: 'ERROR',
       userId,

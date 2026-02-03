@@ -80,22 +80,22 @@ export class LogPublisher {
     }
   }
 
-  async logHeroEvent(action: string, itemData: any, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-    await this.publishLog('item.' + action.toLowerCase(), {
-      service: 'ITEM_SERVICE',
+  async logHeroEvent(action: string, heroData: any, userId: string | null = null, sessionId: string | null = null): Promise<void> {
+    await this.publishLog('log.hero.' + action.toLowerCase(), {
+      service: 'HERO_SERVICE',
       action: action,
-      message: `Item event: ${action}`,
+      message: `Hero event: ${action}`,
       level: 'INFO',
       userId,
       sessionId,
-      metadata: itemData,
+      metadata: heroData,
       timestamp: new Date().toISOString()
     });
   }
 
   async logError(error: any, context: any = {}, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-    await this.publishLog('error.item', {
-      service: 'ITEM_SERVICE',
+    await this.publishLog('log.error.hero', {
+      service: 'HERO_SERVICE',
       action: 'ERROR_OCCURRED',
       message: error.message || 'Unknown error',
       level: 'ERROR',

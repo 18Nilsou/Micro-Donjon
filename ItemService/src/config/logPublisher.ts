@@ -94,7 +94,7 @@ export class LogPublisher {
   }
 
   async logItemTypeEvent(action: string, itemTypeData: any, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-    await this.publishLog('item.' + action.toLowerCase(), {
+    await this.publishLog('log.item.' + action.toLowerCase(), {
       service: 'ITEM_SERVICE',
       action: action,
       message: `ItemType event: ${action}`,
@@ -107,7 +107,7 @@ export class LogPublisher {
   }
 
   async logError(error: any, context: any = {}, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-    await this.publishLog('error.item', {
+    await this.publishLog('log.error.item', {
       service: 'ITEM_SERVICE',
       action: 'ERROR_OCCURRED',
       message: error.message || 'Unknown error',

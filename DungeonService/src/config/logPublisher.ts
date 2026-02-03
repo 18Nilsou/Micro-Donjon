@@ -81,7 +81,7 @@ export class LogPublisher {
   }
 
   async logDungeonEvent(action: string, dungeonData: any, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-    await this.publishLog('dungeon.' + action.toLowerCase(), {
+    await this.publishLog('log.dungeon.' + action.toLowerCase(), {
       service: 'DUNGEON_SERVICE',
       action: action,
       message: `Dungeon event: ${action}`,
@@ -94,7 +94,7 @@ export class LogPublisher {
   }
 
   async logError(error: any, context: any = {}, userId: string | null = null, sessionId: string | null = null): Promise<void> {
-    await this.publishLog('error.dungeon', {
+    await this.publishLog('log.error.dungeon', {
       service: 'DUNGEON_SERVICE',
       action: 'ERROR_OCCURRED',
       message: error.message || 'Unknown error',
