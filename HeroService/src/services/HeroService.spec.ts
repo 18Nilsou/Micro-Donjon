@@ -23,7 +23,8 @@ describe('HeroService', () => {
             attackPoints: 15,
             inventory: [],
             class: "Warrior",
-            gold: 10
+            gold: 10,
+            userId: 'user-1'
         },
         {
             id: '2',
@@ -34,7 +35,8 @@ describe('HeroService', () => {
             attackPoints: 35,
             inventory: [],
             class: "Paladin",
-            gold: 60
+            gold: 60,
+            userId: 'user-1'
         }
     ];
 
@@ -98,7 +100,7 @@ describe('HeroService', () => {
             mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
 
             // When
-            const result = await service.updateHealthPoints('1', 50);
+            const result = await service.updateHealthPoints('1', 50, 'user-1');
 
             // Then
             expect(result.healthPoints).toBe(50);
@@ -110,7 +112,7 @@ describe('HeroService', () => {
             mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
 
             // When
-            const result = await service.updateHealthPoints('1', 150);
+            const result = await service.updateHealthPoints('1', 150, 'user-1');
 
             // Then
             expect(result.healthPoints).toBe(100);
@@ -123,7 +125,7 @@ describe('HeroService', () => {
             mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
 
             // When
-            const result = await service.updateHealthPointsMax('1', 150);
+            const result = await service.updateHealthPointsMax('1', 150, 'user-1');
 
             // Then
             expect(result.healthPointsMax).toBe(150);
@@ -137,7 +139,7 @@ describe('HeroService', () => {
             mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
 
             // When
-            const result = await service.updateLevel('1', 10);
+            const result = await service.updateLevel('1', 10, 'user-1');
 
             // Then
             expect(result.level).toBe(10);
@@ -151,7 +153,7 @@ describe('HeroService', () => {
             mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
 
             // When
-            const result = await service.updateAttackPoints('1', 25);
+            const result = await service.updateAttackPoints('1', 25, 'user-1');
 
             // Then
             expect(result.attackPoints).toBe(25);
@@ -169,7 +171,7 @@ describe('HeroService', () => {
             mockRedisClient.get.mockResolvedValue(JSON.stringify([heroWithItems]));
 
             // When
-            const result = await service.getInventory('1');
+            const result = await service.getInventory('1', 'user-1');
 
             // Then
             expect(result).toEqual([{ id: 1, quantity: 2 }]);

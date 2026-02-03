@@ -1,6 +1,7 @@
 import { Hero } from "../domain/models/Hero";
 import { v4 as uuidv4 } from "uuid";
 import { NotFoundError } from "../domain/errors/NotFoundError";
+import { ForbiddenError } from "../domain/errors/ForbiddenError";
 import { redisClient } from "../config/redis";
 import { logPublisher } from "../config/logPublisher";
 import { Class } from "../domain/models/Class";
@@ -9,15 +10,40 @@ import { CreateHeroRequest } from "../domain/models/CreateHeroRequest";
 export class HeroService {
 
     private readonly HEROES_KEY = 'heroes';
+    private readonly USER_HEROES_KEY_PREFIX = 'user_heroes:';
+
+    async listByUserId(userId: string): Promise<Hero[]> {
+        const heroIds = await redisClient.sMembers(`${this.USER_HEROES_KEY_PREFIX}${userId}`);
+        const heroes: Hero[] = [];
+
+        for (const id of heroIds) {
+            try {
+                const heroData = await this.getById(id, userId);
+                if (heroData) {
+                    heroes.push(heroData);
+                }
+            } catch (error) {
+                // Skip heroes that can't be retrieved
+                console.error(`Error retrieving hero ${id}:`, error);
+            }
+        }
+
+        if (logPublisher) {
+            await logPublisher.logHeroEvent('HEROES_RETRIEVED', { userId, count: heroes.length });
+        }
+
+        return heroes;
+    }
 
     async list(): Promise<Hero[]> {
         const heroIds = await redisClient.sMembers(this.HEROES_KEY);
         const heroes: Hero[] = [];
 
         for (const id of heroIds) {
-            const heroData = await this.getById(id);
+            const heroData = await redisClient.get(`${this.HEROES_KEY}${id}`);
             if (heroData) {
-                heroes.push(heroData);
+                const hero = JSON.parse(heroData) as Hero;
+                heroes.push(hero);
             }
         }
 
@@ -41,6 +67,7 @@ export class HeroService {
     async create(heroData: CreateHeroRequest): Promise<Hero> {
         let hero: Hero = {
             id: uuidv4(),
+            userId: heroData.userId,
             level: 1,
             inventory: [],
             healthPoints: heroData.class.healthPoints,
@@ -52,6 +79,7 @@ export class HeroService {
         };
 
         await redisClient.sAdd(this.HEROES_KEY, hero.id);
+        await redisClient.sAdd(`${this.USER_HEROES_KEY_PREFIX}${hero.userId}`, hero.id);
 
         await redisClient.set(
             `${this.HEROES_KEY}${hero.id}`,
@@ -59,13 +87,13 @@ export class HeroService {
         );
 
         if (logPublisher) {
-            await logPublisher.logHeroEvent('HERO_CREATED', { heroId: hero.id });
+            await logPublisher.logHeroEvent('HERO_CREATED', { heroId: hero.id, userId: hero.userId });
         }
 
         return hero;
     }
 
-    async getById(heroId: string): Promise<Hero> {
+    async getById(heroId: string, requestingUserId?: string): Promise<Hero> {
         const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
 
         if (!heroData) {
@@ -73,6 +101,11 @@ export class HeroService {
         }
 
         const hero = JSON.parse(heroData) as Hero;
+
+        // Verify ownership if requestingUserId is provided
+        if (requestingUserId && hero.userId !== requestingUserId) {
+            throw new ForbiddenError(`Access denied: You don't own this hero.`);
+        }
 
         if (logPublisher) {
             await logPublisher.logHeroEvent('HERO_RETRIEVED', { heroId: hero.id });
@@ -81,22 +114,7 @@ export class HeroService {
         return hero;
     }
 
-    async delete(heroId: string): Promise<void> {
-        const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
-
-        if (!heroData) {
-            throw new NotFoundError(`Hero with id ${heroId} not found.`);
-        }
-
-        await redisClient.del(`${this.HEROES_KEY}${heroId}`);
-        await redisClient.sRem(this.HEROES_KEY, heroId);
-
-        if (logPublisher) {
-            await logPublisher.logHeroEvent('HERO_DELETED', { heroId });
-        }
-    }
-
-    async updateHealthPoints(heroId: string, healthPoints: number): Promise<Hero> {
+    async delete(heroId: string, requestingUserId: string): Promise<void> {
         const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
 
         if (!heroData) {
@@ -104,6 +122,39 @@ export class HeroService {
         }
 
         const hero = JSON.parse(heroData) as Hero;
+
+        // Verify ownership
+        if (hero.userId !== requestingUserId) {
+            throw new ForbiddenError(`Access denied: You don't own this hero.`);
+        }
+
+        await redisClient.del(`${this.HEROES_KEY}${heroId}`);
+        await redisClient.sRem(this.HEROES_KEY, heroId);
+        await redisClient.sRem(`${this.USER_HEROES_KEY_PREFIX}${hero.userId}`, heroId);
+
+        if (logPublisher) {
+            await logPublisher.logHeroEvent('HERO_DELETED', { heroId });
+        }
+    }
+
+    private async getAndVerifyOwnership(heroId: string, requestingUserId: string): Promise<Hero> {
+        const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
+
+        if (!heroData) {
+            throw new NotFoundError(`Hero with id ${heroId} not found.`);
+        }
+
+        const hero = JSON.parse(heroData) as Hero;
+
+        if (hero.userId !== requestingUserId) {
+            throw new ForbiddenError(`Access denied: You don't own this hero.`);
+        }
+
+        return hero;
+    }
+
+    async updateHealthPoints(heroId: string, healthPoints: number, requestingUserId: string): Promise<Hero> {
+        const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
 
         const oldHealthPoints = hero.healthPoints;
 
@@ -129,14 +180,8 @@ export class HeroService {
         return hero;
     }
 
-    async updateHealthPointsMax(heroId: string, healthPointsMax: number): Promise<Hero> {
-        const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
-
-        if (!heroData) {
-            throw new NotFoundError(`Hero with id ${heroId} not found.`);
-        }
-
-        const hero = JSON.parse(heroData) as Hero;
+    async updateHealthPointsMax(heroId: string, healthPointsMax: number, requestingUserId: string): Promise<Hero> {
+        const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
 
         const oldHealthPointsMax = hero.healthPointsMax;
         hero.healthPointsMax = healthPointsMax;
@@ -157,14 +202,8 @@ export class HeroService {
         return hero;
     }
 
-    async updateLevel(heroId: string, level: number): Promise<Hero> {
-        const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
-
-        if (!heroData) {
-            throw new NotFoundError(`Hero with id ${heroId} not found.`);
-        }
-
-        const hero = JSON.parse(heroData) as Hero;
+    async updateLevel(heroId: string, level: number, requestingUserId: string): Promise<Hero> {
+        const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
 
         const oldLevel = hero.level;
         hero.level = level;
@@ -185,14 +224,8 @@ export class HeroService {
         return hero;
     }
 
-    async updateAttackPoints(heroId: string, attackPoints: number): Promise<Hero> {
-        const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
-
-        if (!heroData) {
-            throw new NotFoundError(`Hero with id ${heroId} not found.`);
-        }
-
-        const hero = JSON.parse(heroData) as Hero;
+    async updateAttackPoints(heroId: string, attackPoints: number, requestingUserId: string): Promise<Hero> {
+        const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
 
         const oldAttackPoints = hero.attackPoints;
         hero.attackPoints = attackPoints;
@@ -213,22 +246,16 @@ export class HeroService {
         return hero;
     }
 
-    async getInventory(heroId: string): Promise<Array<{
+    async getInventory(heroId: string, requestingUserId: string): Promise<Array<{
         id: number;
         quantity: number;
     }>> {
-        const hero = await this.getById(heroId);
+        const hero = await this.getById(heroId, requestingUserId);
         return hero.inventory;
     }
 
-    async addItemToInventory(id: number, quantity: number, heroId: string) {
-        const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
-
-        if (!heroData) {
-            throw new NotFoundError(`Hero with id ${heroId} not found.`);
-        }
-
-        const hero = JSON.parse(heroData) as Hero;
+    async addItemToInventory(id: number, quantity: number, heroId: string, requestingUserId: string) {
+        const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
 
         const existingItem = hero.inventory.find(item => item.id === id);
 

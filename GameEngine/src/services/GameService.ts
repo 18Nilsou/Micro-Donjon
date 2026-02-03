@@ -22,15 +22,19 @@ const DUNGEON_NAMES = [
 
 export class GameService {
 
-  private baseUrl: string = process.env.HERO_SERVICE_URL || 'http://localhost:3005';
+  private baseUrl: string = process.env.HERO_SERVICE_URL || 'http://localhost:3002';
   private readonly GAMES_KEY = 'game:';
 
   constructor(
     private readonly dungeonService: DungeonService
   ) { }
 
-  async startGame(heroId: string): Promise<Game> {
-    const heroResponse = await axios.get<Hero>(`${this.baseUrl}/heroes/${heroId}`);
+  async startGame(heroId: string, userId: string): Promise<Game> {
+    const heroResponse = await axios.get<Hero>(`${this.baseUrl}/heroes/${heroId}`, {
+      headers: {
+        'x-user-id': userId
+      }
+    });
     const hero = heroResponse.data;
 
     // Automatically generate a new dungeon for this game

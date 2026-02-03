@@ -2,6 +2,7 @@ import { Express, Response, Request } from "express";
 import { Hero } from "../domain/models/Hero";
 import { HeroService } from "../services/HeroService";
 import { NotFoundError } from "../domain/errors/NotFoundError";
+import { ForbiddenError } from "../domain/errors/ForbiddenError";
 import { Class } from "../domain/models/Class";
 import { CreateHeroRequest } from "../domain/models/CreateHeroRequest";
 
@@ -10,7 +11,7 @@ export class HeroController {
   constructor(private heroService: HeroService) { }
 
   registerRoutes(app: Express) {
-    app.get('/heroes', this.listAllHeroes.bind(this));
+    app.get('/heroes/user/:userId', this.listUserHeroes.bind(this));
     app.get('/heroes/classes', this.listAllClasses.bind(this));
     app.post('/heroes', this.createHero.bind(this));
     app.get('/heroes/:id', this.getHeroById.bind(this));
@@ -24,9 +25,29 @@ export class HeroController {
     app.get('/heroes/:id/inventory', this.getHeroInventory.bind(this));
   }
 
-  async listAllHeroes(req: Request, res: Response) {
-    const heroes: Hero[] = await this.heroService.list();
-    res.status(200).send(heroes);
+  private getUserIdFromRequest(req: Request): string {
+    const userId = req.headers['x-user-id'] as string;
+    if (!userId) {
+      throw new Error('User ID not found in request headers');
+    }
+    return userId;
+  }
+
+  async listUserHeroes(req: Request, res: Response) {
+    try {
+      const userId = req.params.userId;
+      const requestingUserId = this.getUserIdFromRequest(req);
+      
+      // Verify that user is requesting their own heroes
+      if (userId !== requestingUserId) {
+        return res.status(403).send({ error: 'Access denied: You can only view your own heroes' });
+      }
+      
+      const heroes: Hero[] = await this.heroService.listByUserId(userId);
+      res.status(200).send(heroes);
+    } catch (error) {
+      res.status(500).send({ error: 'Internal Server Error' });
+    }
   }
 
   async listAllClasses(req: Request, res: Response) {
@@ -35,19 +56,30 @@ export class HeroController {
   }
 
   async createHero(req: Request, res: Response) {
-    const heroData: CreateHeroRequest = req.body;
-    const newHero: Hero = await this.heroService.create(heroData);
-    res.status(201).send(newHero);
+    try {
+      const userId = this.getUserIdFromRequest(req);
+      const heroData: CreateHeroRequest = {
+        ...req.body,
+        userId
+      };
+      const newHero: Hero = await this.heroService.create(heroData);
+      res.status(201).send(newHero);
+    } catch (error: any) {
+      res.status(500).send({ error: error.message || 'Internal Server Error' });
+    }
   }
 
   async getHeroById(req: Request, res: Response) {
     const heroId = req.params.id;
     try {
-      const hero: Hero = await this.heroService.getById(heroId);
+      const userId = this.getUserIdFromRequest(req);
+      const hero: Hero = await this.heroService.getById(heroId, userId);
       res.status(200).send(hero);
     } catch (error) {
       if (error instanceof NotFoundError) {
         res.status(404).send({ error: error.message });
+      } else if (error instanceof ForbiddenError) {
+        res.status(403).send({ error: error.message });
       } else {
         res.status(500).send({ error: 'Internal Server Error' });
       }
@@ -57,7 +89,8 @@ export class HeroController {
   async deleteHero(req: Request, res: Response) {
     const heroId = req.params.id;
     try {
-      await this.heroService.delete(heroId);
+      const userId = this.getUserIdFromRequest(req);
+      await this.heroService.delete(heroId, userId);
       res.status(200).send({ message: 'Hero deleted successfully' });
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -72,7 +105,8 @@ export class HeroController {
     const heroId = req.params.id;
     const { healthPoints } = req.body;
     try {
-      const updatedHero: Hero = await this.heroService.updateHealthPoints(heroId, healthPoints);
+      const userId = this.getUserIdFromRequest(req);
+      const updatedHero: Hero = await this.heroService.updateHealthPoints(heroId, healthPoints, userId);
       res.status(200).send(updatedHero);
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -87,7 +121,8 @@ export class HeroController {
     const heroId = req.params.id;
     const { healthPointsMax } = req.body;
     try {
-      const updatedHero: Hero = await this.heroService.updateHealthPointsMax(heroId, healthPointsMax);
+      const userId = this.getUserIdFromRequest(req);
+      const updatedHero: Hero = await this.heroService.updateHealthPointsMax(heroId, healthPointsMax, userId);
       res.status(200).send(updatedHero);
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -102,7 +137,8 @@ export class HeroController {
     const heroId = req.params.id;
     const { level } = req.body;
     try {
-      const updatedHero: Hero = await this.heroService.updateLevel(heroId, level);
+      const userId = this.getUserIdFromRequest(req);
+      const updatedHero: Hero = await this.heroService.updateLevel(heroId, level, userId);
       res.status(200).send(updatedHero);
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -117,7 +153,8 @@ export class HeroController {
     const heroId = req.params.id;
     const { attackPoints } = req.body;
     try {
-      const updatedHero: Hero = await this.heroService.updateAttackPoints(heroId, attackPoints);
+      const userId = this.getUserIdFromRequest(req);
+      const updatedHero: Hero = await this.heroService.updateAttackPoints(heroId, attackPoints, userId);
       res.status(200).send(updatedHero);
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -132,7 +169,8 @@ export class HeroController {
     const heroId = req.params.id;
     const { id, quantity } = req.body;
     try {
-      await this.heroService.addItemToInventory(id, quantity, heroId);
+      const userId = this.getUserIdFromRequest(req);
+      await this.heroService.addItemToInventory(id, quantity, heroId, userId);
       const updatedHero = await this.heroService.getById(heroId);
       res.status(200).send(updatedHero);
     } catch (error) {
@@ -147,7 +185,8 @@ export class HeroController {
   async getHeroInventory(req: Request, res: Response) {
     const heroId = req.params.id;
     try {
-      const inventory = await this.heroService.getInventory(heroId);
+      const userId = this.getUserIdFromRequest(req);
+      const inventory = await this.heroService.getInventory(heroId, userId);
       res.status(200).send(inventory);
     } catch (error) {
       if (error instanceof NotFoundError) {

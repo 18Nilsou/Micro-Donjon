@@ -2,6 +2,7 @@ import { Item } from "./Item";
 
 export interface Hero {
   id: string;
+  userId: string;
   name: string;
   healthPoints: number;
   healthPointsMax: number;

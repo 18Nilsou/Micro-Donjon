@@ -1,12 +1,18 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { SERVICES } from '../config/services';
 import { proxyRequest } from '../utils/proxyRequest';
+import { AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
 router.get('/heroes', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await proxyRequest(req, res, SERVICES.HERO, '/heroes');
+    const authReq = req as AuthenticatedRequest;
+    const userId = authReq.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+    await proxyRequest(req, res, SERVICES.HERO, `/heroes/user/${userId}`);
   } catch (error) {
     next(error);
   }
@@ -31,14 +37,6 @@ router.get('/heroes/classes', async (req: Request, res: Response, next: NextFunc
 router.get('/heroes/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(req, res, SERVICES.HERO, `/heroes/${req.params.id}`);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post('/heroes', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(req, res, SERVICES.HERO, '/heroes');
   } catch (error) {
     next(error);
   }

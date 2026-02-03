@@ -49,6 +49,7 @@ async function startServer() {
   try {
     await connectRedis();
     await initLogPublisher();
+    
     app.listen(port, () => {
       console.log(`Server listening on http://localhost:${port}`);
       console.log(`Swagger docs at http://localhost:${port}/docs`);
