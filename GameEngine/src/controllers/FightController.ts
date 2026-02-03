@@ -19,9 +19,9 @@ export class FightController {
     try {
       const { id } = req.params;
       const result = await this.fightService.attack(id);
-      res.status(200).json(result);
+      return res.status(200).json(result);
     } catch (error) {
-      res.status(400).json({ error: (error as Error).message });
+      return res.status(400).json({ error: (error as Error).message });
     }
   }
 
@@ -29,9 +29,9 @@ export class FightController {
     try {
       const { id } = req.params;
       const result = await this.fightService.defend(id);
-      res.status(200).json(result);
+      return res.status(200).json(result);
     } catch (error) {
-      res.status(400).json({ error: (error as Error).message });
+      return res.status(400).json({ error: (error as Error).message });
     }
   }
 
@@ -39,9 +39,9 @@ export class FightController {
     try {
       const { id } = req.params;
       const result = await this.fightService.flee(id);
-      res.status(200).json(result);
+      return res.status(200).json(result);
     } catch (error) {
-      res.status(400).json({ error: (error as Error).message });
+      return res.status(400).json({ error: (error as Error).message });
     }
   }
 
@@ -49,9 +49,9 @@ export class FightController {
     try {
       const fight = req.body;
       const result = await this.fightService.startFight(fight);
-      res.status(201).json(result);
+      return res.status(201).json(result);
     } catch (error) {
-      res.status(400).json({ error: (error as Error).message });
+      return res.status(400).json({ error: (error as Error).message });
     }
   }
 

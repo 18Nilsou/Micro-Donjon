@@ -36,6 +36,22 @@ router.get('/heroes/:id', async (req: Request, res: Response, next: NextFunction
   }
 });
 
+router.post('/heroes', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(req, res, SERVICES.HERO, '/heroes');
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/heroes/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(req, res, SERVICES.HERO, `/heroes/${req.params.id}`);
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.put('/heroes/:id/health', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(

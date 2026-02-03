@@ -14,6 +14,7 @@ export class HeroController {
     app.get('/heroes/classes', this.listAllClasses.bind(this));
     app.post('/heroes', this.createHero.bind(this));
     app.get('/heroes/:id', this.getHeroById.bind(this));
+    app.delete('/heroes/:id', this.deleteHero.bind(this));
     app.put('/heroes/:id/healthPoints', this.updateHeroHealthPoints.bind(this));
     app.put('/heroes/:id/healthPointsMax', this.updateHeroHealthPointsMax.bind(this));
     app.put('/heroes/:id/level', this.updateHeroLevel.bind(this));
@@ -44,6 +45,20 @@ export class HeroController {
     try {
       const hero: Hero = await this.heroService.getById(heroId);
       res.status(200).send(hero);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        res.status(404).send({ error: error.message });
+      } else {
+        res.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  }
+
+  async deleteHero(req: Request, res: Response) {
+    const heroId = req.params.id;
+    try {
+      await this.heroService.delete(heroId);
+      res.status(200).send({ message: 'Hero deleted successfully' });
     } catch (error) {
       if (error instanceof NotFoundError) {
         res.status(404).send({ error: error.message });

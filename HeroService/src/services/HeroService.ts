@@ -81,6 +81,21 @@ export class HeroService {
         return hero;
     }
 
+    async delete(heroId: string): Promise<void> {
+        const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
+
+        if (!heroData) {
+            throw new NotFoundError(`Hero with id ${heroId} not found.`);
+        }
+
+        await redisClient.del(`${this.HEROES_KEY}${heroId}`);
+        await redisClient.sRem(this.HEROES_KEY, heroId);
+
+        if (logPublisher) {
+            await logPublisher.logHeroEvent('HERO_DELETED', { heroId });
+        }
+    }
+
     async updateHealthPoints(heroId: string, healthPoints: number): Promise<Hero> {
         const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
 

@@ -23,7 +23,7 @@ paths:
                   $ref: '#/components/schemas/Mob'
         '500':
           description: Internal Server Error
-  /mobs/{type}:
+  /mobs/type/{type}:
     get:
       summary: Get mobs by type
       tags:

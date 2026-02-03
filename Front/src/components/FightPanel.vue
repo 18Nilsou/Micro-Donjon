@@ -29,11 +29,25 @@ const getCurrentFight = () => {
 
 const attack = async () => {
   if (!props.fight) return;
+  console.log('Attacking with fight ID:', props.fight.id);
   try {
     const updatedFight = await api.attackInFight(props.fight.id);
-    emit('fightUpdated', updatedFight);
+    if (updatedFight) {
+      emit('fightUpdated', updatedFight);
+    } else {
+      // Refresh fight state if response was empty
+      const freshFight = await api.getFight();
+      emit('fightUpdated', freshFight);
+    }
   } catch (error) {
     console.error('Attack failed:', error);
+    // Try to refresh state anyway
+    try {
+      const freshFight = await api.getFight();
+      emit('fightUpdated', freshFight);
+    } catch (e) {
+      console.error('Failed to refresh fight state:', e);
+    }
   }
 };
 
@@ -41,9 +55,20 @@ const defend = async () => {
   if (!props.fight) return;
   try {
     const updatedFight = await api.defendInFight(props.fight.id);
-    emit('fightUpdated', updatedFight);
+    if (updatedFight) {
+      emit('fightUpdated', updatedFight);
+    } else {
+      const freshFight = await api.getFight();
+      emit('fightUpdated', freshFight);
+    }
   } catch (error) {
     console.error('Defend failed:', error);
+    try {
+      const freshFight = await api.getFight();
+      emit('fightUpdated', freshFight);
+    } catch (e) {
+      console.error('Failed to refresh fight state:', e);
+    }
   }
 };
 
@@ -51,9 +76,20 @@ const flee = async () => {
   if (!props.fight) return;
   try {
     const updatedFight = await api.fleeFromFight(props.fight.id);
-    emit('fightUpdated', updatedFight);
+    if (updatedFight) {
+      emit('fightUpdated', updatedFight);
+    } else {
+      const freshFight = await api.getFight();
+      emit('fightUpdated', freshFight);
+    }
   } catch (error) {
     console.error('Flee failed:', error);
+    try {
+      const freshFight = await api.getFight();
+      emit('fightUpdated', freshFight);
+    } catch (e) {
+      console.error('Failed to refresh fight state:', e);
+    }
   }
 };
 
@@ -81,7 +117,7 @@ const mobHealthPercent = computed(() => {
 
       <div class="combatants">
         <div class="combatant hero-combatant">
-          <div class="combatant-icon">🛡️</div>
+          <div class="combatant-icon">🧙</div>
           <div class="combatant-name">{{ hero?.name || 'Hero' }}</div>
           <div class="health-bar">
             <div 
