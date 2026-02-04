@@ -14,7 +14,7 @@ router.get('/mobs', async (req: Request, res: Response, next: NextFunction) => {
 
 router.get('/mobs/type/:type', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await proxyRequest(req, res, SERVICES.MOB, `/mobs/${req.params.type}`);
+    await proxyRequest(req, res, SERVICES.MOB, `/mobs/type/${req.params.type}`);
   } catch (error) {
     next(error);
   }

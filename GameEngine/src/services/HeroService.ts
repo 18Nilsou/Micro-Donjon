@@ -1,29 +1,25 @@
-import axios from 'axios';
 import { GameService } from './GameService';
-import { DungeonService } from './DungeonService';
-import { MobService } from './MobService';
 import { FightService } from './FightService';
 import { logPublisher } from '../config/logPublisher';
-import { Hero } from '../domain/models/Hero';
 import { MoveResponse } from '../domain/models/MoveResponse';
 import { Fight } from '../domain/models/Fight';
 import { v4 as uuidv4 } from 'uuid';
+import { Dungeon } from '../domain/models/Dungeon';
+import { NotFoundError } from '../domain/errors/NotFoundError';
+import { Mob } from '../domain/models/Mob';
 
 export class HeroService {
 
-  private baseUrl: string = process.env.HERO_SERVICE_URL || 'http://localhost:3005';
   private encounterChance: number = 0.05; // 5% chance of encounter per move
 
   constructor(
     private readonly gameService: GameService,
-    private readonly dungeonService: DungeonService,
-    private readonly mobService: MobService,
     private readonly fightService: FightService
   ) { }
 
-  async moveHero(heroId: string, x: number, y: number): Promise<MoveResponse> {
+  async moveHero(dungeon: Dungeon, commonMobs: Mob[], x: number, y: number): Promise<MoveResponse> {
     const game = await this.gameService.findById('current');
-    if (!game) throw new Error('No current game');
+    if (!game) throw new NotFoundError('No current game');
 
     // Check if player is in a fight - movement is blocked during combat
     if (game.currentFightId) {
@@ -31,10 +27,9 @@ export class HeroService {
     }
 
     // Get the dungeon to check room transitions
-    const dungeon = await this.dungeonService.getDungeon(game.dungeonId);
     const currentRoom = dungeon.rooms.find(room => room.id === game.currentRoomId);
 
-    if (!currentRoom) throw new Error('Current room not found');
+    if (!currentRoom) throw new NotFoundError('Current room not found');
 
     // Validate room boundaries - if out of bounds, return current position without error
     const roomWidth = currentRoom.dimension?.width || 10;
@@ -100,10 +95,9 @@ export class HeroService {
     if (encounterRoll < this.encounterChance) {
       try {
         // Get all available mobs
-        const allMobs = await this.mobService.getMobsByType('Common');
-        if (allMobs && allMobs.length > 0) {
+        if (commonMobs && commonMobs.length > 0) {
           // Select a random mob template
-          const randomMobTemplate = allMobs[Math.floor(Math.random() * allMobs.length)];
+          const randomMobTemplate = commonMobs[Math.floor(Math.random() * commonMobs.length)];
 
           // Create mob instance in game state
           const mobId = (game.mobs ? game.mobs.length : 0) + 1;
@@ -167,20 +161,5 @@ export class HeroService {
     }
 
     return { success: true, position: newPosition, roomId: game.currentRoomId };
-  }
-
-  async getHero(id: string): Promise<Hero> {
-    const response = await axios.get(`${this.baseUrl}/heroes/${id}`);
-    return response.data;
-  }
-
-  async getInventory(heroId: string): Promise<Hero> {
-    const response = await axios.get(`${this.baseUrl}/heroes/${heroId}/inventory`);
-    return response.data;
-  }
-
-  async updateInventory(heroId: string, itemId: string, quantity: number): Promise<Hero> {
-    const response = await axios.post(`${this.baseUrl}/heroes/${heroId}/inventory/add`, { id: itemId, quantity });
-    return response.data;
   }
 }

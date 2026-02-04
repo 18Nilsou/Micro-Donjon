@@ -46,13 +46,13 @@ router.delete('/game', async (req: Request, res: Response, next: NextFunction) =
 });
 
 // Hero routes (via Game Engine)
-router.put('/hero/:heroId/move', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/hero/move', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(
       req,
       res,
       SERVICES.GAME_ENGINE,
-      `/hero/${req.params.heroId}/move`,
+      `/hero/move`,
     );
   } catch (error) {
     next(error);

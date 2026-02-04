@@ -2,7 +2,6 @@ import { logPublisher } from "../config/logPublisher";
 import { heroEventPublisher } from "../config/heroEventPublisher";
 import { Fight } from "../domain/models/Fight";
 import { GameService } from "./GameService";
-import axios from 'axios';
 import { Hero } from "../domain/models/Hero";
 
 export class FightService {

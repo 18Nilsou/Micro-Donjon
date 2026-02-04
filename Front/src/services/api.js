@@ -7,7 +7,7 @@ class ApiService {
   async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
     const token = authService.getToken();
-    
+
     const config = {
       headers: {
         "Content-Type": "application/json",
@@ -31,7 +31,9 @@ class ApiService {
 
       if (!response.ok) {
         throw new Error(
-          data?.error || data?.message || `HTTP error! status: ${response.status}`,
+          data?.error ||
+            data?.message ||
+            `HTTP error! status: ${response.status}`,
         );
       }
 
@@ -100,10 +102,10 @@ class ApiService {
     });
   }
 
-  async moveHero(heroId, x, y) {
-    return this.request(`/hero/${heroId}/move`, {
-      method: "PUT",
-      body: JSON.stringify({ x, y }),
+  async moveHero(dungeon, commonMobs, x, y) {
+    return this.request(`/hero/move`, {
+      method: "POST",
+      body: JSON.stringify({ dungeon, commonMobs, x, y }),
     });
   }
 
