@@ -132,6 +132,7 @@ services:
     environment:
       - REDIS_HOST=redis-hero
       - RABBITMQ_URL=amqp://rabbitmq:5672
+      - ITEM_SERVICE_URL=http://item-service:3004
     depends_on:
       - redis-hero
       - rabbitmq

@@ -51,7 +51,6 @@ export class ItemService {
   }
 
   async getRandom(): Promise<Item> {
-    console.log("ITEM SERVICE - ItemService.ts - getRandom called");
     const items = await this.readItems();
 
     if (items.length === 0) {

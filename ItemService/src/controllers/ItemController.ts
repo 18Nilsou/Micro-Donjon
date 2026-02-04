@@ -15,12 +15,10 @@ export class ItemController {
   }
 
   async getRandom(req: Request, res: Response, next: NextFunction) {
-    console.log("ITEM SERVICE - ItemController.ts - /items/random called");
     try {
       const item: Item = await this.itemService.getRandom();
       res.status(200).json(item);
     } catch (e) {
-      console.error("ITEM SERVICE - ItemController.ts - Error in /items/random:", e);
       next(e);
     }
   }

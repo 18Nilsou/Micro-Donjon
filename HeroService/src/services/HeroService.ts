@@ -6,11 +6,47 @@ import { redisClient } from "../config/redis";
 import { logPublisher } from "../config/logPublisher";
 import { Class } from "../domain/models/Class";
 import { CreateHeroRequest } from "../domain/models/CreateHeroRequest";
+import axios from "axios";
+
+type ItemEffect = 'Attack' | 'Heal' | 'HealthPointMax';
+type ItemType = 'Weapon' | 'Consumable' | 'Armor';
+
+interface ItemDetails {
+    id: number;
+    name: string;
+    effect: ItemEffect;
+    value: number;
+    itemType: ItemType;
+}
 
 export class HeroService {
 
     private readonly HEROES_KEY = 'heroes';
     private readonly USER_HEROES_KEY_PREFIX = 'user_heroes:';
+    private readonly ITEM_SERVICE_URL = process.env.ITEM_SERVICE_URL || 'http://localhost:3004';
+
+    private async getItemById(itemId: number): Promise<ItemDetails> {
+        const response = await axios.get(`${this.ITEM_SERVICE_URL}/items/${itemId}`);
+        return response.data as ItemDetails;
+    }
+
+    private applyItemEffect(hero: Hero, item: ItemDetails, quantity: number) {
+        const totalValue = item.value * quantity;
+        switch (item.effect) {
+            case 'Attack':
+                hero.attackPoints += totalValue;
+                break;
+            case 'Heal':
+                hero.healthPoints = Math.min(hero.healthPointsMax, hero.healthPoints + totalValue);
+                break;
+            case 'HealthPointMax':
+                hero.healthPointsMax += totalValue;
+                hero.healthPoints = Math.min(hero.healthPointsMax, hero.healthPoints + totalValue);
+                break;
+            default:
+                break;
+        }
+    }
 
     async listByUserId(userId: string): Promise<Hero[]> {
         const heroIds = await redisClient.sMembers(`${this.USER_HEROES_KEY_PREFIX}${userId}`);
@@ -269,12 +305,18 @@ export class HeroService {
     async addItemToInventory(id: number, quantity: number, heroId: string, requestingUserId: string) {
         const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
 
+        const item = await this.getItemById(id);
+
         const existingItem = hero.inventory.find(item => item.id === id);
 
         if (existingItem) {
             existingItem.quantity += quantity;
         } else {
             hero.inventory.push({ id, quantity });
+        }
+
+        if (item.itemType !== 'Consumable') {
+            this.applyItemEffect(hero, item, quantity);
         }
 
         await redisClient.set(
@@ -286,8 +328,48 @@ export class HeroService {
             await logPublisher.logHeroEvent('ITEM_ADDED_TO_INVENTORY', {
                 heroId,
                 itemId: id,
-                quantity
+                quantity,
+                itemType: item.itemType,
+                effect: item.effect,
+                value: item.value
             });
         }
+    }
+
+    async consumeItemFromInventory(itemId: number, heroId: string, requestingUserId: string): Promise<Hero> {
+        const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
+
+        const inventoryItem = hero.inventory.find(item => item.id === itemId);
+        if (!inventoryItem || inventoryItem.quantity <= 0) {
+            throw new NotFoundError(`Item with id ${itemId} not found in inventory.`);
+        }
+
+        const item = await this.getItemById(itemId);
+        if (item.itemType !== 'Consumable') {
+            throw new ForbiddenError('Only consumable items can be consumed.');
+        }
+
+        this.applyItemEffect(hero, item, 1);
+
+        inventoryItem.quantity -= 1;
+        if (inventoryItem.quantity <= 0) {
+            hero.inventory = hero.inventory.filter(item => item.id !== itemId);
+        }
+
+        await redisClient.set(
+            `${this.HEROES_KEY}${hero.id}`,
+            JSON.stringify(hero)
+        );
+
+        if (logPublisher) {
+            await logPublisher.logHeroEvent('ITEM_CONSUMED', {
+                heroId,
+                itemId,
+                effect: item.effect,
+                value: item.value
+            });
+        }
+
+        return hero;
     }
 }

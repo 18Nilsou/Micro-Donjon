@@ -1,12 +1,18 @@
 <script setup>
-import { defineProps } from 'vue';
+import { defineProps, defineEmits, computed } from 'vue';
 
 const props = defineProps({
   hero: {
     type: Object,
     required: true
+  },
+  itemsCatalog: {
+    type: Array,
+    default: () => []
   }
 });
+
+const emit = defineEmits(['consume-item']);
 
 const getHealthPercentage = () => {
   if (!props.hero.healthPoints || !props.hero.healthPointsMax) return 0;
@@ -18,6 +24,36 @@ const getHealthColor = () => {
   if (percentage > 60) return '#10b981';
   if (percentage > 30) return '#fbbf24';
   return '#dc2626';
+};
+
+const inventoryItems = computed(() => {
+  const itemsById = new Map((props.itemsCatalog || []).map(item => [item.id, item]));
+  return (props.hero.inventory || []).map(invItem => {
+    const details = itemsById.get(invItem.id);
+    return {
+      ...invItem,
+      ...(details || {})
+    };
+  });
+});
+
+const formatEffect = (item) => {
+  if (!item?.effect || item?.value === undefined) return 'Effet inconnu';
+  const value = item.value;
+  switch (item.effect) {
+    case 'Attack':
+      return `+${value} Attaque`;
+    case 'Heal':
+      return `+${value} Soins`;
+    case 'HealthPointMax':
+      return `+${value} PV max`;
+    default:
+      return 'Effet inconnu';
+  }
+};
+
+const consumeItem = (itemId) => {
+  emit('consume-item', itemId);
 };
 </script>
 
@@ -73,16 +109,28 @@ const getHealthColor = () => {
 
     <div v-if="hero.inventory && hero.inventory.length > 0" class="inventory-section">
       <h4>🎒 Inventory</h4>
-      <div class="inventory-grid">
-        <div 
-          v-for="(item, index) in hero.inventory" 
-          :key="index"
-          class="inventory-item"
-          :title="item.name"
+      <ul class="inventory-list">
+        <li 
+          v-for="item in inventoryItems" 
+          :key="item.id"
+          class="inventory-list-item"
         >
-          {{ item.icon || '📦' }}
-        </div>
-      </div>
+          <div class="item-info">
+            <div class="item-name">{{ item.name || `Item #${item.id}` }}</div>
+            <div class="item-effect">{{ formatEffect(item) }}</div>
+          </div>
+          <div class="item-actions">
+            <span v-if="item.quantity > 1" class="item-qty">x{{ item.quantity }}</span>
+            <button 
+              v-if="item.itemType === 'Consumable'" 
+              class="consume-btn" 
+              @click="consumeItem(item.id)"
+            >
+              Consommer
+            </button>
+          </div>
+        </li>
+      </ul>
     </div>
   </div>
 </template>
@@ -198,28 +246,64 @@ const getHealthColor = () => {
   color: #e0e0e0;
 }
 
-.inventory-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+.inventory-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.inventory-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-name {
+  font-weight: 700;
+  color: #e0e0e0;
+}
+
+.item-effect {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.item-actions {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-.inventory-item {
-  aspect-ratio: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.item-qty {
+  font-weight: 600;
+  color: #e0e0e0;
 }
 
-.inventory-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: #3b82f6;
-  transform: scale(1.1);
+.consume-btn {
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.consume-btn:hover {
+  background: #059669;
 }
 </style>

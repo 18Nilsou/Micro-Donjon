@@ -15,6 +15,7 @@ const currentDungeon = ref(null);
 const inFight = ref(false);
 const currentFight = ref(null);
 const currentMob = ref(null);
+const itemsCatalog = ref([]);
 
 const startNewGame = async ({ hero, dungeon }) => {
   loading.value = true;
@@ -69,6 +70,16 @@ const loadGameState = async () => {
   }
 };
 
+const loadItemsCatalog = async () => {
+  try {
+    if (!itemsCatalog.value || itemsCatalog.value.length === 0) {
+      itemsCatalog.value = await api.getItems();
+    }
+  } catch (err) {
+    console.error('Failed to load items catalog:', err);
+  }
+};
+
 const moveHero = async (x, y) => {
   if (!currentHero.value || !gameState.value) return;
   
@@ -82,14 +93,12 @@ const moveHero = async (x, y) => {
     
     // Check if encounter happened
     if (result.encounter?.happened && result.encounter?.fight) {
-      console.log('New encounter! Fight ID:', result.encounter.fight.id);
       currentFight.value = result.encounter.fight;
       inFight.value = true;
       
       // Use mob data from encounter response (already included from game state)
       currentMob.value = result.encounter.mob;
       
-      console.log('Encounter!', currentFight.value, currentMob.value);
     }
     
     // Only reload if room changed
@@ -126,7 +135,6 @@ const endGame = async () => {
 };
 
 const handleFightUpdate = async (updatedFight) => {
-  console.log('Fight updated:', updatedFight.id, 'Status:', updatedFight.status);
   currentFight.value = updatedFight;
   
   // Check if hero died FIRST before trying to fetch deleted data
@@ -198,9 +206,20 @@ const handleFightUpdate = async (updatedFight) => {
   }
 };
 
+const handleConsumeItem = async (itemId) => {
+  if (!currentHero.value) return;
+  try {
+    await api.consumeHeroItem(currentHero.value.id, itemId);
+    currentHero.value = await api.getHero(currentHero.value.id);
+  } catch (err) {
+    error.value = 'Failed to consume item: ' + err.message;
+  }
+};
+
 onMounted(async () => {
   // Check if there's an ongoing game
   try {
+    await loadItemsCatalog();
     await loadGameState();
     if (gameState.value) {
       gameStarted.value = true;
@@ -238,6 +257,8 @@ onMounted(async () => {
           <HeroPanel 
             v-if="currentHero" 
             :hero="currentHero"
+            :items-catalog="itemsCatalog"
+            @consume-item="handleConsumeItem"
           />
         </div>
 

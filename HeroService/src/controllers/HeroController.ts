@@ -23,6 +23,7 @@ export class HeroController {
     app.post('/heroes/:id/inventory/add', this.addHeroItem.bind(this));
     app.put('/heroes/:id/inventory', this.addHeroItem.bind(this));
     app.post('/heroes/:id/inventory', this.addHeroItem.bind(this));
+    app.post('/heroes/:id/inventory/consume', this.consumeHeroItem.bind(this));
     app.get('/heroes/:id/inventory', this.getHeroInventory.bind(this));
   }
 
@@ -191,6 +192,24 @@ export class HeroController {
     } catch (error) {
       if (error instanceof NotFoundError) {
         res.status(404).send({ error: error.message });
+      } else {
+        res.status(500).send({ error: 'Internal Server Error' });
+      }
+    }
+  }
+
+  async consumeHeroItem(req: Request, res: Response) {
+    const heroId = req.params.id;
+    const { id } = req.body;
+    try {
+      const userId = this.getUserIdFromRequest(req);
+      const updatedHero = await this.heroService.consumeItemFromInventory(id, heroId, userId);
+      res.status(200).send(updatedHero);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        res.status(404).send({ error: error.message });
+      } else if (error instanceof ForbiddenError) {
+        res.status(403).send({ error: error.message });
       } else {
         res.status(500).send({ error: 'Internal Server Error' });
       }

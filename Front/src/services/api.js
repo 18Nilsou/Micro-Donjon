@@ -18,9 +18,7 @@ class ApiService {
     };
 
     try {
-      console.log(`[ApiService] ${JSON.stringify(config)} ${url}`);
       const response = await fetch(url, config);
-      console.log(`[ApiService] Response status: ${response.status}`);
       const text = await response.text();
       const data = text ? JSON.parse(text) : null;
 
@@ -71,6 +69,13 @@ class ApiService {
     return this.request(`/heroes/${heroId}/items`, {
       method: "POST",
       body: JSON.stringify(item),
+    });
+  }
+
+  async consumeHeroItem(heroId, itemId) {
+    return this.request(`/heroes/${heroId}/items/consume`, {
+      method: "POST",
+      body: JSON.stringify({ id: itemId }),
     });
   }
 
