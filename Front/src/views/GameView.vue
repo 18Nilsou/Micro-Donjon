@@ -81,6 +81,16 @@ const loadItemsCatalog = async () => {
   }
 };
 
+const loadMobsCatalog = async () => {
+  try {
+    if (!commonMobs.value || commonMobs.value.length === 0) {
+      commonMobs.value = await api.getMobsByType('Common');
+    }
+  } catch (err) {
+    console.error('Failed to load mobs catalog:', err);
+  }
+};
+
 const moveHero = async (x, y) => {
   if (!currentHero.value || !gameState.value) return;
   
@@ -208,9 +218,9 @@ const handleConsumeItem = async (itemId) => {
 
 onMounted(async () => {
   try {
+    await loadMobsCatalog();
     await loadItemsCatalog();
     await loadGameState();
-    commonMobs.value = await api.getMobsByType('Common');
     if (gameState.value) {
       gameStarted.value = true;
     }
