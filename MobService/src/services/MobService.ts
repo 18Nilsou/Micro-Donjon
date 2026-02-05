@@ -24,7 +24,7 @@ export class MobService {
             throw new NotFoundError(`No mobs found of type: ${type}`);
         }
         else if (logPublisher) {
-            await logPublisher.logMobEvent('MOBS_GET_BY_TYPE', { type: type });
+            await logPublisher.logMobEvent('MOBS_GET_BY_TYPE', { mobType: type });
         }
         return filteredMobs;
     }
@@ -40,7 +40,7 @@ export class MobService {
             throw new NotFoundError(`Mob with id ${id} not found.`);
         }
         else if (logPublisher) {
-            await logPublisher.logMobEvent('MOB_GET_BY_ID', { id: id });
+            await logPublisher.logMobEvent('MOB_GET_BY_ID', { mobId: id });
         }
         return mob;
     }

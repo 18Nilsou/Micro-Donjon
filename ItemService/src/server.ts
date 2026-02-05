@@ -1,12 +1,12 @@
 import 'reflect-metadata';
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response } from 'express';
 import * as fs from "node:fs";
 import * as YAML from 'yaml';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
 import { ItemService } from './services/ItemService';
 import { ItemController } from './controllers/ItemController';
-import { HTTPError } from './domains/errors/HTTPError';
+import { errorHandler } from './errorHandling';
 
 dotenv.config();
 
@@ -21,15 +21,7 @@ const swaggerDocument = YAML.parse(file)
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// Error handling middleware
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  if (err instanceof HTTPError) {
-    res.status(err.code).json({ error: err.message });
-  } else {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
+app.use(errorHandler);
 
 // Start server
 const startServer = async () => {

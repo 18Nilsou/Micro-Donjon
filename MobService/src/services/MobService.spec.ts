@@ -1,18 +1,30 @@
-import { NotFoundError } from "../domain/errors/NotFoundError";
 import { Mob } from "../domain/models/Mob";
 import { MobService } from "./MobService";
+import { NotFoundError } from "../domain/errors/NotFoundError";
 
-// Mock du logPublisher pour éviter les erreurs
 jest.mock('../config/logPublisher', () => ({
     logPublisher: {
         logMobEvent: jest.fn().mockResolvedValue(undefined)
     }
 }));
 
-// Mock des données de mobs
 const mobsData: Mob[] = [
-    { id: 1, name: "Lenny Spider", healthPoints: 100, healthPointsMax: 100, attackPoints: 15, type: "Common" },
-    { id: 2, name: "Lacaca, Eater of Pizza", healthPoints: 2000, healthPointsMax: 2000, attackPoints: 50, type: "Boss" }
+    {
+        id: 1,
+        name: "Lenny Spider",
+        healthPoints: 100,
+        healthPointsMax: 100,
+        attackPoints: 15,
+        type: "Common"
+    },
+    {
+        id: 2,
+        name: "Lacaca, Eater of Pizza",
+        healthPoints: 2000,
+        healthPointsMax: 2000,
+        attackPoints: 50,
+        type: "Boss"
+    }
 ];
 
 jest.mock('../../data/mobs_data.json', () => (mobsData), { virtual: true });
@@ -50,5 +62,18 @@ describe('MobService', () => {
         // When & Then
         await expect(service.getByType('Elite' as any)).rejects.toThrow(NotFoundError);
         await expect(service.getByType('Elite' as any)).rejects.toThrow('No mobs found of type: Elite');
+    });
+
+    it('should retrieve a mob by id', async () => {
+        // When
+        const result = await service.getById(1);
+
+        // Then
+        expect(result).toEqual(mobsData[0]);
+    });
+
+    it('should throw when no mob found', async () => {
+        // When & Then
+        await expect(service.getById(999)).rejects.toThrow(NotFoundError);
     });
 });

@@ -1,5 +1,5 @@
 import { ItemService } from "../services/ItemService";
-import { Item } from "../domains/model/Item";
+import { Item } from "../domain/model/Item";
 
 describe('ItemService - Integration', () => {
     let service: ItemService;
@@ -8,15 +8,14 @@ describe('ItemService - Integration', () => {
         service = new ItemService();
     });
 
-    it('should list items from database', async () => {
+    it('should list items from json', async () => {
         // When
         const items = await service.list();
 
         // Then
         expect(items).toBeDefined();
         expect(Array.isArray(items)).toBe(true);
-        // Initially, the database might be empty
-        expect(items.length).toBeGreaterThanOrEqual(0);
+        expect(items.length).toBeGreaterThan(0);
 
         if (items.length > 0) {
             // Verify structure of first item if any exist
