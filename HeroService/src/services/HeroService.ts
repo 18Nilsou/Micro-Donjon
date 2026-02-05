@@ -60,6 +60,9 @@ export class HeroService {
                 }
             } catch (error) {
                 // Skip heroes that can't be retrieved
+                if (logPublisher) {
+                    await logPublisher.logError(error, { userId, heroId: id });
+                }
                 console.error(`Error retrieving hero ${id}:`, error);
             }
         }
@@ -133,6 +136,9 @@ export class HeroService {
         const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
 
         if (!heroData) {
+            if (logPublisher) {
+                await logPublisher.logError(`HERO_GET_BY_ID`, { heroId });
+            }
             throw new NotFoundError(`Hero with id ${heroId} not found.`);
         }
 
@@ -154,6 +160,9 @@ export class HeroService {
         const heroData = await this.getById(heroId);
 
         if (!heroData) {
+            if (logPublisher) {
+                await logPublisher.logError(`HERO_DELETE`, { heroId });
+            }
             throw new NotFoundError(`Hero with id ${heroId} not found.`);
         }
 
@@ -172,12 +181,18 @@ export class HeroService {
         const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
 
         if (!heroData) {
+            if (logPublisher) {
+                await logPublisher.logError(`HERO_GET_AND_VERIFY_OWNERSHIP`, { heroId, requestingUserId });
+            }
             throw new NotFoundError(`Hero with id ${heroId} not found.`);
         }
 
         const hero = JSON.parse(heroData) as Hero;
 
         if (hero.userId !== requestingUserId) {
+            if (logPublisher) {
+                await logPublisher.logError(`HERO_OWNERSHIP_VERIFICATION_FAILED`, { heroId, requestingUserId });
+            }
             throw new ForbiddenError(`Access denied: You don't own this hero.`);
         }
 
@@ -187,7 +202,12 @@ export class HeroService {
     async updateHealthPoints(heroId: string, healthPoints: number): Promise<Hero> {
         const heroData = await this.getById(heroId);
 
-        if (!heroData) throw new NotFoundError(`Hero with id ${heroId} not found.`);
+        if (!heroData) {
+            if (logPublisher) {
+                await logPublisher.logError(`HERO_UPDATE_HEALTH_POINTS`, { heroId });
+            }
+            throw new NotFoundError(`Hero with id ${heroId} not found.`);
+        }
 
         const hero = heroData;
 
@@ -240,7 +260,12 @@ export class HeroService {
     async updateLevel(heroId: string): Promise<Hero> {
         const heroData = await this.getById(heroId);
 
-        if (!heroData) throw new NotFoundError(`Hero with id ${heroId} not found.`);
+        if (!heroData) {
+            if (logPublisher) {
+                await logPublisher.logError(`HERO_UPDATE_LEVEL`, { heroId });
+            }
+            throw new NotFoundError(`Hero with id ${heroId} not found.`);
+        }
 
         const hero = heroData;
 
@@ -341,11 +366,17 @@ export class HeroService {
 
         const inventoryItem = hero.inventory.find(item => item.id === itemId);
         if (!inventoryItem || inventoryItem.quantity <= 0) {
+            if (logPublisher) {
+                await logPublisher.logError(`ITEM_CONSUME_FAILED`, { heroId, itemId, reason: 'Item not found in inventory' });
+            }
             throw new NotFoundError(`Item with id ${itemId} not found in inventory.`);
         }
 
         const item = await this.getItemById(itemId);
         if (item.itemType !== 'Consumable') {
+            if (logPublisher) {
+                await logPublisher.logError(`ITEM_CONSUME_FAILED`, { heroId, itemId, reason: 'Item is not consumable' });
+            }
             throw new ForbiddenError('Only consumable items can be consumed.');
         }
 

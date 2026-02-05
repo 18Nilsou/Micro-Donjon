@@ -5,6 +5,7 @@ import { User, UserPublic, RegisterRequest, LoginRequest, AuthResponse } from '.
 import { UnauthorizedError, BadRequestError, ConflictError, NotFoundError } from '../errorHandling';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import jwt, { SignOptions, Secret } from 'jsonwebtoken';
+import { logPublisher } from '../config/logPublisher';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'micro-donjon-jwt-secret-key-2024';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
@@ -26,6 +27,9 @@ export class AuthService {
     const secret = JWT_SECRET as Secret;
     // expiresIn doit être string littérale ou number, donc cast explicite pour TS v9+
     const options: SignOptions = { expiresIn: JWT_EXPIRES_IN as any };
+    if (logPublisher) {
+      logPublisher.logAuthEvent('TOKEN_GENERATED', { userId });
+    }
     return jwt.sign(payload, secret, options);
   }
 
@@ -33,10 +37,16 @@ export class AuthService {
     const { username, email, password } = data;
 
     if (!username || !email || !password) {
+      if (logPublisher) {
+        logPublisher.logError(new BadRequestError('Missing registration fields'), { data });
+      }
       throw new BadRequestError('Username, email and password are required');
     }
 
     if (password.length < 6) {
+      if (logPublisher) {
+        logPublisher.logError(new BadRequestError('Password too short'), { data });
+      }
       throw new BadRequestError('Password must be at least 6 characters long');
     }
 
@@ -49,6 +59,9 @@ export class AuthService {
     );
 
     if (existingUsers.length > 0) {
+      if (logPublisher) {
+        logPublisher.logError(new ConflictError('User already exists'), { data });
+      }
       throw new ConflictError('User with this email or username already exists');
     }
 
@@ -61,6 +74,10 @@ export class AuthService {
       'INSERT INTO users (id, username, email, password_hash) VALUES (?, ?, ?, ?)',
       [userId, username, email, passwordHash]
     );
+
+    if (logPublisher) {
+      logPublisher.logAuthEvent('USER_REGISTERED', { userId, username, email }); 
+    }
 
     // Get created user
     const [users] = await pool.execute<RowDataPacket[]>(
@@ -81,6 +98,9 @@ export class AuthService {
     const { email, password } = data;
 
     if (!email || !password) {
+      if (logPublisher) {
+        logPublisher.logError(new BadRequestError('Missing login fields'), { data });
+      }
       throw new BadRequestError('Email and password are required');
     }
 
@@ -93,6 +113,9 @@ export class AuthService {
     );
 
     if (users.length === 0) {
+      if (logPublisher) {
+        logPublisher.logError(new UnauthorizedError('Invalid email or password'), { email });
+      }
       throw new UnauthorizedError('Invalid email or password');
     }
 
@@ -101,11 +124,16 @@ export class AuthService {
     // Verify password
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
+      if (logPublisher) {
+        logPublisher.logError(new UnauthorizedError('Invalid email or password'), { email });
+      }
       throw new UnauthorizedError('Invalid email or password');
     }
 
     const token = this.generateToken(user.id);
-
+    if (logPublisher) {
+      logPublisher.logAuthEvent('USER_LOGGED_IN', { userId: user.id, email }); 
+    }
     return {
       user: this.toUserPublic(user),
       token
@@ -123,13 +151,27 @@ export class AuthService {
       );
 
       if (users.length === 0) {
+        if (logPublisher) {
+          logPublisher.logError(new UnauthorizedError('User not found'), { userId: decoded.userId });
+        }
         throw new UnauthorizedError('User not found');
       }
-
+      if (logPublisher) {
+        logPublisher.logAuthEvent('TOKEN_VERIFIED', { userId: decoded.userId }); 
+      }
       return this.toUserPublic(users[0] as User);
     } catch (error) {
       if (error instanceof UnauthorizedError) {
+        if (logPublisher) {
+          logPublisher.logError(error, { error });
+        }
         throw error;
+      }
+      if (logPublisher) {
+        logPublisher.logError(new UnauthorizedError('Invalid or expired token'), { error });
+      }
+      if (error instanceof jwt.TokenExpiredError) {
+        throw new UnauthorizedError('Token expired');
       }
       throw new UnauthorizedError('Invalid or expired token');
     }
@@ -143,9 +185,14 @@ export class AuthService {
     );
 
     if (users.length === 0) {
+      if (logPublisher) {
+        logPublisher.logError(new NotFoundError('User not found'), { userId });
+      }
       throw new NotFoundError('User not found');
     }
-
+    if (logPublisher) {
+      logPublisher.logAuthEvent('USER_FETCHED', { userId }); 
+    }
     return this.toUserPublic(users[0] as User);
   }
 
@@ -159,6 +206,9 @@ export class AuthService {
     );
 
     if (users.length === 0) {
+      if (logPublisher) {
+        logPublisher.logError(new NotFoundError('User not found'), { userId });
+      }
       throw new NotFoundError('User not found');
     }
 
@@ -173,7 +223,9 @@ export class AuthService {
       'SELECT * FROM users WHERE id = ?',
       [userId]
     );
-
+    if (logPublisher) {
+      logPublisher.logAuthEvent('HERO_LINKED', { userId, heroId }); 
+    }
     return this.toUserPublic(updatedUsers[0] as User);
   }
 
@@ -191,9 +243,14 @@ export class AuthService {
     );
 
     if (users.length === 0) {
+      if (logPublisher) {
+        logPublisher.logError(new NotFoundError('User not found'), { userId });
+      }
       throw new NotFoundError('User not found');
     }
-
+    if (logPublisher) {
+      logPublisher.logAuthEvent('HERO_UNLINKED', { userId }); 
+    }
     return this.toUserPublic(users[0] as User);
   }
 }

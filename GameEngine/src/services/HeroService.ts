@@ -23,10 +23,18 @@ export class HeroService {
 
   async moveHero(heroId: string, x: number, y: number): Promise<MoveResponse> {
     const game = await this.gameService.findById('current');
-    if (!game) throw new Error('No current game');
+    if (!game){
+      if (logPublisher) {
+        await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'No current game found' });
+      }
+      throw new Error('No current game');
+    } 
 
     // Check if player is in a fight - movement is blocked during combat
     if (game.currentFightId) {
+      if (logPublisher) {
+        await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'Hero is currently in a fight', fightId: game.currentFightId });
+      }
       return { success: true, position: game.heroPosition, roomId: game.currentRoomId };
     }
 
@@ -34,13 +42,21 @@ export class HeroService {
     const dungeon = await this.dungeonService.getDungeon(game.dungeonId);
     const currentRoom = dungeon.rooms.find(room => room.id === game.currentRoomId);
 
-    if (!currentRoom) throw new Error('Current room not found');
+    if (!currentRoom) {
+      if (logPublisher) {
+        await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'Current room not found in dungeon', roomId: game.currentRoomId });
+      }
+      throw new Error('Current room not found');
+    }
 
     // Validate room boundaries - if out of bounds, return current position without error
     const roomWidth = currentRoom.dimension?.width || 10;
     const roomHeight = currentRoom.dimension?.height || 10;
 
     if (x < 0 || x >= roomWidth || y < 0 || y >= roomHeight) {
+      if (logPublisher) {
+        await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'Movement out of room boundaries', attemptedPosition: { x, y }, roomId: game.currentRoomId });
+      }
       return { success: true, position: game.heroPosition, roomId: game.currentRoomId };
     }
 
@@ -161,8 +177,10 @@ export class HeroService {
           };
         }
       } catch (error) {
+        if (logPublisher) {
+          await logPublisher.logError('ENCOUNTER_CREATION_FAILED', { reason: (error as Error).message });
+        }
         console.error('Failed to create encounter:', error);
-        // Continue without encounter if something fails
       }
     }
 

@@ -34,8 +34,6 @@ export class GameService {
   ) { }
 
   async startGame(hero: Hero, dungeon: Dungeon): Promise<Game> {
-    // const heroResponse = await axios.get<Hero>(`${this.baseUrl}/heroes/${heroId}`);
-    // const hero = heroResponse.data;
 
     // Automatically generate a new dungeon for this game
     const randomName = DUNGEON_NAMES[Math.floor(Math.random() * DUNGEON_NAMES.length)];
@@ -45,7 +43,6 @@ export class GameService {
       name: randomName,
       numberOfRooms: randomRooms
     };
-    // const dungeon = await this.dungeonService.generateDungeon(dungeonRequest);
 
     const game: Game = {
       id: uuidv4(),
@@ -71,7 +68,12 @@ export class GameService {
 
   async getGame(): Promise<Game> {
     const current = await this.findById('current');
-    if (!current) throw new NotFoundError('No current game');
+    if (!current) {
+      if (logPublisher) {
+        await logPublisher.logError('GAME_RETRIEVE_FAILED', { reason: 'No current game found' });
+      }
+      throw new NotFoundError('No current game');
+    }
 
     if (logPublisher) {
       await logPublisher.logGameEvent('GAME_RETRIEVED', { gameJson: 'all' });
@@ -118,10 +120,16 @@ export class GameService {
   }
 
   async delete(id: string): Promise<void> {
+    if (logPublisher) {
+      await logPublisher.logGameEvent('GAME_DELETED', { gameId: id });
+    }
     await redisClient.del(`game:${id}`);
   }
 
   async updateLevel(heroId: string): Promise<void> {
+    if (logPublisher) {
+      await logPublisher.logGameEvent('HERO_LEVEL_UP', { heroId: heroId });
+    }
     await heroEventPublisher.publishHeroLevelUp(heroId);
   }
 

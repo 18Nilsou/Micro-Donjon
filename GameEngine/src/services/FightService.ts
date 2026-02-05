@@ -35,7 +35,13 @@ export class FightService {
   async getFight(): Promise<Fight> {
     const game = await this.gameService.findById('current');
     if (!game || !game.currentFight) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_RETRIEVAL_FAILED', { reason: 'No active fight found in game state' });
+      }
       throw new Error('No active fight');
+    }
+    if (logPublisher) {
+      await logPublisher.logGameEvent('FIGHT_RETRIEVED', { fightId: game.currentFight.id });
     }
     return game.currentFight;
   }
@@ -45,25 +51,40 @@ export class FightService {
     const game = await this.gameService.findById('current');
 
     if (!game || !game.currentFight || game.currentFight.id !== fightId) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_ATTACK_FAILED', { reason: 'Fight not found in game state', expectedFightId: fightId, actualFightId: game?.currentFight?.id || 'none' });
+      }
       throw new Error(`Fight not found. Expected: ${fightId}, Got: ${game?.currentFight?.id || 'none'}`);
     }
 
     const fight = game.currentFight;
     if (fight.status !== 'active') {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_ATTACK_FAILED', { reason: 'Fight is not active', fightStatus: fight.status });
+      }
       throw new Error('Fight is not active');
     }
 
     if (fight.turn !== 'hero') {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_ATTACK_FAILED', { reason: 'Not hero turn', currentTurn: fight.turn });
+      }
       throw new Error('Not hero turn');
     }
 
     // Get mob from game state
     if (!game.mobs) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_ATTACK_FAILED', { reason: 'No mobs found in game state' });
+      }
       throw new Error('Game or mob data not found');
     }
 
     const mobInstance = game.mobs.find(m => m.id === fight.mobIds[0]);
     if (!mobInstance) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_ATTACK_FAILED', { reason: 'Mob instance not found in game state', mobId: fight.mobIds[0] });
+      }
       throw new Error('Mob instance not found in game state');
     }
 
@@ -165,24 +186,39 @@ export class FightService {
     // Get fight from game state
     const game = await this.gameService.findById('current');
     if (!game || !game.currentFight || game.currentFight.id !== fightId) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_DEFEND_FAILED', { reason: 'Fight not found in game state', expectedFightId: fightId, actualFightId: game?.currentFight?.id || 'none' });
+      }
       throw new Error('Fight not found');
     }
 
     const fight = game.currentFight;
     if (fight.status !== 'active') {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_DEFEND_FAILED', { reason: 'Fight is not active', fightStatus: fight.status });
+      }
       throw new Error('Fight is not active');
     }
 
     if (fight.turn !== 'hero') {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_DEFEND_FAILED', { reason: 'Not hero turn', currentTurn: fight.turn });
+      }
       throw new Error('Not hero turn');
     }
 
     if (!game.mobs) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_DEFEND_FAILED', { reason: 'No mobs found in game state' });
+      }
       throw new Error('Game or mob data not found');
     }
 
     const mobInstance = game.mobs.find(m => m.id === fight.mobIds[0]);
     if (!mobInstance) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_DEFEND_FAILED', { reason: 'Mob instance not found in game state', mobId: fight.mobIds[0] });
+      }
       throw new Error('Mob instance not found in game state');
     }
 
@@ -250,22 +286,34 @@ export class FightService {
     // Get fight from game state
     const game = await this.gameService.findById('current');
     if (!game || !game.currentFight || game.currentFight.id !== fightId) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_FLEE_FAILED', { reason: 'Fight not found in game state', expectedFightId: fightId, actualFightId: game?.currentFight?.id || 'none' });
+      }
       throw new Error('Fight not found');
     }
 
     const fight = game.currentFight;
     if (fight.status !== 'active') {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_FLEE_FAILED', { reason: 'Fight is not active', fightStatus: fight.status });
+      }
       throw new Error('Fight is not active');
     }
 
     const fleeRoll = Math.random();
 
     if (!game.mobs) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_FLEE_FAILED', { reason: 'No mobs found in game state' });
+      }
       throw new Error('Game or mob data not found');
     }
 
     const mobInstance = game.mobs.find(m => m.id === fight.mobIds[0]);
     if (!mobInstance) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_FLEE_FAILED', { reason: 'Mob instance not found in game state', mobId: fight.mobIds[0] });
+      }
       throw new Error('Mob instance not found in game state');
     }
 
@@ -358,6 +406,9 @@ export class FightService {
     const game = await this.gameService.findById('current');
 
     if (!game || !game.currentFight) {
+      if (logPublisher) {
+        await logPublisher.logError('FIGHT_UPDATE_FAILED', { reason: 'No active fight found in game state' });
+      }
       throw new Error('No active fight');
     }
 
@@ -380,6 +431,9 @@ export class FightService {
         this.gameService.save(game),
         this.gameService.save({ ...game, id: 'current' })
       ]);
+      if (logPublisher) {
+        await logPublisher.logGameEvent('FIGHT_DELETED', { gameID: game.id });
+      }
     }
   }
 }

@@ -55,14 +55,14 @@ async function initDatabase(): Promise<void> {
 async function connectToRabbitMQ(): Promise<void> {
   await retryWithBackoff(async () => {
 
-    const connection: Connection = await amqp.connect(rabbitmqUrl);
+    const connection = await amqp.connect(rabbitmqUrl);
 
     channel = await connection.createChannel();
     await channel.assertExchange('game_events', 'topic', { durable: true });
     const queue = await channel.assertQueue('logs_queue', { durable: true });
 
     const routingKeys: string[] = [
-      'log.*'
+      'log.#'
     ];
 
     for (const routingKey of routingKeys) {

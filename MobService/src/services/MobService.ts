@@ -18,6 +18,9 @@ export class MobService {
         const filteredMobs = mobs.filter(mob => mob.type === type);
 
         if (filteredMobs.length === 0) {
+            if (logPublisher) {
+                await logPublisher.logError('MOBS_GET_BY_TYPE', { type: type });
+            }
             throw new NotFoundError(`No mobs found of type: ${type}`);
         }
         else if (logPublisher) {
@@ -31,6 +34,9 @@ export class MobService {
         const mob = mobs.find(mob => mob.id === Number(id));
 
         if (!mob) {
+            if (logPublisher) {
+                await logPublisher.logError('MOBS_GET_BY_ID', { id: id });
+            }
             throw new NotFoundError(`Mob with id ${id} not found.`);
         }
         else if (logPublisher) {
