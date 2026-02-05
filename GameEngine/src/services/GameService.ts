@@ -1,49 +1,18 @@
 import { v4 as uuidv4 } from 'uuid';
-import axios from 'axios';
 import { redisClient } from '../config/redis';
-import { DungeonService } from './DungeonService';
 import { Game } from '../domain/models/Game';
 import { Hero } from '../domain/models/Hero';
 import { logPublisher } from '../config/logPublisher';
 import { NotFoundError } from '../domain/errors/NotFoundError';
-import { ItemService } from './ItemService';
-import { Item } from '../domain/models/Item';
 import { Dungeon } from '../domain/models/Dungeon';
-import { heroEventPublisher } from '../config/heroEventPublisher';
-
-const DUNGEON_NAMES = [
-  'Caverns of Chaos',
-  'Dungeon of Doom',
-  'Labyrinth of Legends',
-  'Crypt of Shadows',
-  'Fortress of Fear',
-  'Maze of Mysteries',
-  'Catacombs of the Forgotten',
-  'Temple of Trials',
-  'Citadel of Sorrows',
-  'Keep of the Damned'
-];
 
 export class GameService {
 
   private readonly GAMES_KEY = 'game:';
 
-  constructor(
-    private readonly dungeonService: DungeonService,
-    private readonly itemService: ItemService
-  ) { }
+  constructor() { }
 
   async startGame(hero: Hero, dungeon: Dungeon): Promise<Game> {
-
-    // Automatically generate a new dungeon for this game
-    const randomName = DUNGEON_NAMES[Math.floor(Math.random() * DUNGEON_NAMES.length)];
-    const randomRooms = Math.round(Math.random() * (20 - 3) + 3);
-
-    const dungeonRequest = {
-      name: randomName,
-      numberOfRooms: randomRooms
-    };
-
     const game: Game = {
       id: uuidv4(),
       heroId: hero.id,
@@ -57,7 +26,6 @@ export class GameService {
     };
 
     await this.save(game);
-    // Set current game
     await this.save({ ...game, id: 'current' });
     if (logPublisher) {
       await logPublisher.logGameEvent('GAME_STARTED', { gameJson: JSON.stringify(game) });
@@ -103,7 +71,7 @@ export class GameService {
   }
 
   async save(game: Game): Promise<void> {
-    await redisClient.set(`game:${game.id}`, JSON.stringify(game));
+    await redisClient.set(`${this.GAMES_KEY}${game.id}`, JSON.stringify(game));
   }
 
   async findById(gameId: string): Promise<Game | null> {
@@ -123,17 +91,6 @@ export class GameService {
     if (logPublisher) {
       await logPublisher.logGameEvent('GAME_DELETED', { gameId: id });
     }
-    await redisClient.del(`game:${id}`);
-  }
-
-  async updateLevel(heroId: string): Promise<void> {
-    if (logPublisher) {
-      await logPublisher.logGameEvent('HERO_LEVEL_UP', { heroId: heroId });
-    }
-    await heroEventPublisher.publishHeroLevelUp(heroId);
-  }
-
-  async getRandomItem(): Promise<Item> {
-    return this.itemService.getRandomItem();
+    await redisClient.del(`${this.GAMES_KEY}${id}`);
   }
 }

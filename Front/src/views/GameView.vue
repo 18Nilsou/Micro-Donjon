@@ -16,6 +16,7 @@ const inFight = ref(false);
 const currentFight = ref(null);
 const currentMob = ref(null);
 const itemsCatalog = ref([]);
+const commonMobs = ref([]);
 
 const startNewGame = async ({ hero, dungeon }) => {
   loading.value = true;
@@ -80,6 +81,16 @@ const loadItemsCatalog = async () => {
   }
 };
 
+const loadMobsCatalog = async () => {
+  try {
+    if (!commonMobs.value || commonMobs.value.length === 0) {
+      commonMobs.value = await api.getMobsByType('Common');
+    }
+  } catch (err) {
+    console.error('Failed to load mobs catalog:', err);
+  }
+};
+
 const moveHero = async (x, y) => {
   if (!currentHero.value || !gameState.value) return;
   
@@ -89,27 +100,21 @@ const moveHero = async (x, y) => {
   gameState.value.heroPosition = { x, y };
   
   try {
-    const result = await api.moveHero(currentHero.value.id, x, y);
+    const dungeon = currentDungeon.value;
+    const result = await api.moveHero(dungeon, commonMobs.value, x, y);
     
-    // Check if encounter happened
     if (result.encounter?.happened && result.encounter?.fight) {
       currentFight.value = result.encounter.fight;
       inFight.value = true;
-      
-      // Use mob data from encounter response (already included from game state)
       currentMob.value = result.encounter.mob;
-      
     }
     
-    // Only reload if room changed
     if (result.roomId !== previousRoomId) {
       await loadGameState();
     } else {
-      // Just update position
       gameState.value.heroPosition = result.position;
     }
   } catch (err) {
-    // Revert on error
     gameState.value.heroPosition = previousPosition;
     gameState.value.currentRoomId = previousRoomId;
     error.value = 'Failed to move hero: ' + err.message;
@@ -137,10 +142,8 @@ const endGame = async () => {
 const handleFightUpdate = async (updatedFight) => {
   currentFight.value = updatedFight;
   
-  // Check if hero died FIRST before trying to fetch deleted data
   if (updatedFight.status === 'heroLost') {
     error.value = 'Game Over! Your hero has fallen...';
-    // Hero is dead - go back to main screen after showing message
     setTimeout(() => {
       gameState.value = null;
       gameStarted.value = false;
@@ -176,9 +179,7 @@ const handleFightUpdate = async (updatedFight) => {
     console.error('Failed to refresh game state:', err);
   }
   
-  // Check if fight has ended
   if (updatedFight.status !== 'active') {
-    // Show result message
     if (updatedFight.status === 'heroWon') {
       error.value = 'Victory! The monster has been defeated!';
       
@@ -197,7 +198,6 @@ const handleFightUpdate = async (updatedFight) => {
       setTimeout(() => { error.value = null; }, 3000);
     }
     
-    // Clear fight state after a delay to show final combat log
     setTimeout(() => {
       inFight.value = false;
       currentFight.value = null;
@@ -217,15 +217,14 @@ const handleConsumeItem = async (itemId) => {
 };
 
 onMounted(async () => {
-  // Check if there's an ongoing game
   try {
+    await loadMobsCatalog();
     await loadItemsCatalog();
     await loadGameState();
     if (gameState.value) {
       gameStarted.value = true;
     }
   } catch (err) {
-    // No active game
     console.log('No active game');
   }
 });
