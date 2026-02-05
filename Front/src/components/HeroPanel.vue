@@ -38,17 +38,17 @@ const inventoryItems = computed(() => {
 });
 
 const formatEffect = (item) => {
-  if (!item?.effect || item?.value === undefined) return 'Effet inconnu';
+  if (!item?.effect || item?.value === undefined) return 'Unknown effect';
   const value = item.value;
   switch (item.effect) {
     case 'Attack':
-      return `+${value} Attaque`;
+      return `+${value} Attack`;
     case 'Heal':
-      return `+${value} Soins`;
+      return `+${value} Health`;
     case 'HealthPointMax':
-      return `+${value} PV max`;
+      return `+${value} Max Health`;
     default:
-      return 'Effet inconnu';
+      return 'Unknown effect';
   }
 };
 
@@ -126,7 +126,7 @@ const consumeItem = (itemId) => {
               class="consume-btn" 
               @click="consumeItem(item.id)"
             >
-              Consommer
+              Consume
             </button>
           </div>
         </li>
