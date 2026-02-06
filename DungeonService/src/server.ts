@@ -14,8 +14,8 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-const file = fs.readFileSync(require.resolve('./api/dungeon.yml'), 'utf8')
-const swaggerDocument = YAML.parse(file)
+const file = fs.readFileSync(require.resolve('../openapi.yml'), 'utf8');
+const swaggerDocument = YAML.parse(file);
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
@@ -31,12 +31,12 @@ app.get('/health', async (req, res) => {
     timestamp: new Date().toISOString(),
     redis_connected: redisClient?.isOpen || false
   };
-  
+
   if (!redisClient?.isOpen) {
     health.status = 'degraded';
     return res.status(503).json(health);
   }
-  
+
   res.status(200).json(health);
 });
 

@@ -16,8 +16,8 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 
-const file = fs.readFileSync(require.resolve('../openapi.yml'), 'utf8')
-const swaggerDocument = YAML.parse(file)
+const file = fs.readFileSync(require.resolve('../openapi.yml'), 'utf8');
+const swaggerDocument = YAML.parse(file);
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
