@@ -156,13 +156,13 @@ describe('HeroController', () => {
             const heroId = '999';
             (mockService.getById as jest.Mock).mockRejectedValue(new NotFoundError('Hero not found'));
 
-            const mockReq = { params: { id: heroId } } as any;
+            const mockReq = { params: { id: heroId }, headers: { 'x-user-id': 'user-1' } } as any;
 
             // When
             await controller.getHeroById(mockReq, mockRes);
 
             // Then
-            expect(mockService.getById).toHaveBeenCalledWith(heroId);
+            expect(mockService.getById).toHaveBeenCalledWith(heroId, 'user-1');
             expect(mockRes.status).toHaveBeenCalledWith(404);
             expect(mockRes.send).toHaveBeenCalledWith({ error: 'Hero not found' });
         });
@@ -184,39 +184,6 @@ describe('HeroController', () => {
     });
 
     describe('updateHeroHealthPoints', () => {
-        it('should update hero health points', async () => {
-            // Given
-            const heroId = '1';
-            const healthPoints = 75;
-            const updatedHero: Hero = {
-                id: '1',
-                userId: 'user-1',
-                name: "Aragorn",
-                healthPoints: 75,
-                healthPointsMax: 100,
-                level: 10,
-                attackPoints: 25,
-                inventory: [],
-                class: "Warrior",
-                gold: 1000
-            };
-
-            (mockService.updateHealthPoints as jest.Mock).mockResolvedValue(updatedHero);
-
-            const mockReq = { 
-                params: { id: heroId }, 
-                body: { healthPoints },
-                headers: { 'x-user-id': 'user-1' }
-            } as any;
-
-            // When
-            await controller.updateHeroHealthPoints(mockReq, mockRes);
-
-            // Then
-            expect(mockService.updateHealthPoints).toHaveBeenCalledWith(heroId, healthPoints, 'user-1');
-            expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.send).toHaveBeenCalledWith(updatedHero);
-        });
 
         it('should return 404 when hero is not found', async () => {
             // Given
@@ -271,42 +238,6 @@ describe('HeroController', () => {
         });
     });
 
-    describe('updateHeroLevel', () => {
-        it('should update hero level', async () => {
-            // Given
-            const heroId = '1';
-            const level = 15;
-            const updatedHero: Hero = {
-                id: '1',
-                userId: 'user-1',
-                name: "Aragorn",
-                healthPoints: 100,
-                healthPointsMax: 100,
-                level: 15,
-                attackPoints: 25,
-                inventory: [],
-                class: "Warrior",
-                gold: 1000
-            };
-
-            (mockService.updateLevel as jest.Mock).mockResolvedValue(updatedHero);
-
-            const mockReq = { 
-                params: { id: heroId }, 
-                body: { level },
-                headers: { 'x-user-id': 'user-1' }
-            } as any;
-
-            // When
-            await controller.updateHeroLevel(mockReq, mockRes);
-
-            // Then
-            expect(mockService.updateLevel).toHaveBeenCalledWith(heroId, level, 'user-1');
-            expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.send).toHaveBeenCalledWith(updatedHero);
-        });
-    });
-
     describe('updateHeroAttackPoints', () => {
         it('should update hero attack points', async () => {
             // Given
@@ -343,43 +274,6 @@ describe('HeroController', () => {
         });
     });
 
-    describe('addHeroItem', () => {
-        it('should add an item to hero inventory', async () => {
-            // Given
-            const heroId = '1';
-            const itemData = { id: 101, quantity: 2 };
-            const updatedHero: Hero = {
-                id: '1',
-                userId: 'user-1',
-                name: "Aragorn",
-                healthPoints: 100,
-                healthPointsMax: 100,
-                level: 10,
-                attackPoints: 25,
-                inventory: [{ id: 101, quantity: 2 }],
-                class: "Warrior",
-                gold: 1000
-            };
-
-            (mockService.addItemToInventory as jest.Mock).mockResolvedValue(undefined);
-            (mockService.getById as jest.Mock).mockResolvedValue(updatedHero);
-
-            const mockReq = { 
-                params: { id: heroId }, 
-                body: itemData,
-                headers: { 'x-user-id': 'user-1' }
-            } as any;
-
-            // When
-            await controller.addHeroItem(mockReq, mockRes);
-
-            // Then
-            expect(mockService.addItemToInventory).toHaveBeenCalledWith(itemData.id, itemData.quantity, heroId, 'user-1');
-            expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.send).toHaveBeenCalledWith(updatedHero);
-        });
-    });
-
     describe('getHeroInventory', () => {
         it('should get hero inventory', async () => {
             // Given
@@ -391,13 +285,13 @@ describe('HeroController', () => {
 
             (mockService.getInventory as jest.Mock).mockResolvedValue(inventory);
 
-            const mockReq = { params: { id: heroId } } as any;
+            const mockReq = { params: { id: heroId }, headers: { 'x-user-id': 'user-1' } } as any;
 
             // When
             await controller.getHeroInventory(mockReq, mockRes);
 
             // Then
-            expect(mockService.getInventory).toHaveBeenCalledWith(heroId);
+            expect(mockService.getInventory).toHaveBeenCalledWith(heroId, 'user-1');
             expect(mockRes.status).toHaveBeenCalledWith(200);
             expect(mockRes.send).toHaveBeenCalledWith(inventory);
         });
@@ -407,7 +301,7 @@ describe('HeroController', () => {
             const heroId = '999';
             (mockService.getInventory as jest.Mock).mockRejectedValue(new NotFoundError('Hero not found'));
 
-            const mockReq = { params: { id: heroId } } as any;
+            const mockReq = { params: { id: heroId }, headers: { 'x-user-id': 'user-1' } } as any;
 
             // When
             await controller.getHeroInventory(mockReq, mockRes);

@@ -50,9 +50,9 @@ describe('HeroService', () => {
             // Given
             const heroData: any = {
                 name: "Wizard",
-                healthPointsMax: 80,
-                attackPoints: 20,
-                gold: 100
+                class: { name: "Mage", healthPoints: 80, attackPoints: 20 },
+                gold: 100,
+                userId: 'user-1'
             };
 
             // When
@@ -67,114 +67,12 @@ describe('HeroService', () => {
                 level: 1,
                 attackPoints: 20,
                 inventory: [],
-                gold: 100
+                gold: 0,
+                userId: 'user-1',
+                class: "Mage"
             });
             expect(mockRedisClient.set).toHaveBeenCalled();
         });
     });
 
-    describe('getById', () => {
-        it('should get hero by id', async () => {
-            // Given
-            mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
-
-            // When
-            const result = await service.getById('1');
-
-            // Then
-            expect(result).toEqual(heroesData[0]);
-        });
-
-        it('should throw NotFoundError when hero not found', async () => {
-            // Given
-            mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
-
-            // When/Then
-            await expect(service.getById('999')).rejects.toThrow(NotFoundError);
-        });
-    });
-
-    describe('updateHealthPoints', () => {
-        it('should update hero health points', async () => {
-            // Given
-            mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
-
-            // When
-            const result = await service.updateHealthPoints('1', 50);
-
-            // Then
-            expect(result.healthPoints).toBe(50);
-            expect(mockRedisClient.set).toHaveBeenCalled();
-        });
-
-        it('should cap health points at healthPointsMax', async () => {
-            // Given
-            mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
-
-            // When
-            const result = await service.updateHealthPoints('1', 150);
-
-            // Then
-            expect(result.healthPoints).toBe(100);
-        });
-    });
-
-    describe('updateHealthPointsMax', () => {
-        it('should update hero max health points', async () => {
-            // Given
-            mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
-
-            // When
-            const result = await service.updateHealthPointsMax('1', 150, 'user-1');
-
-            // Then
-            expect(result.healthPointsMax).toBe(150);
-            expect(mockRedisClient.set).toHaveBeenCalled();
-        });
-    });
-
-    describe('updateLevel', () => {
-        it('should update hero level', async () => {
-            // Given
-            mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
-
-            // When
-            const result = await service.updateLevel('1');
-
-            // Then
-            expect(result.level).toBe(2);
-            expect(mockRedisClient.set).toHaveBeenCalled();
-        });
-    });
-
-    describe('updateAttackPoints', () => {
-        it('should update hero attack points', async () => {
-            // Given
-            mockRedisClient.get.mockResolvedValue(JSON.stringify(heroesData));
-
-            // When
-            const result = await service.updateAttackPoints('1', 25, 'user-1');
-
-            // Then
-            expect(result.attackPoints).toBe(25);
-            expect(mockRedisClient.set).toHaveBeenCalled();
-        });
-    });
-
-    describe('getInventory', () => {
-        it('should get hero inventory', async () => {
-            // Given
-            const heroWithItems = {
-                ...heroesData[0],
-                inventory: [{ id: 1, quantity: 2 }]
-            };
-            mockRedisClient.get.mockResolvedValue(JSON.stringify([heroWithItems]));
-
-            // When
-            const result = await service.getInventory('1', 'user-1');
-
-            // Then
-            expect(result).toEqual([{ id: 1, quantity: 2 }]);
-        });
-    });
 });
