@@ -1,8 +1,12 @@
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { getPool } from '../config/database';
-import { User, UserPublic, RegisterRequest, LoginRequest, AuthResponse } from '../domain/models/User';
-import { UnauthorizedError, BadRequestError, ConflictError, NotFoundError } from '../errorHandling';
+import { User} from '../domain/models/User';
+import { UserPublic} from '../domain/models/UserPublic';
+import { RegisterRequest} from '../domain/models/RegisterRequest';
+import { LoginRequest} from '../domain/models/LoginRequest';
+import { AuthResponse } from '../domain/models/AuthResponse';
+import { UnauthorizedError, BadRequestError, ConflictError, NotFoundError} from '../domain/models/errors/*';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 import { logPublisher } from '../config/logPublisher';

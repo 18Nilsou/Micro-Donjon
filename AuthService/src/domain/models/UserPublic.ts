@@ -1,9 +1,7 @@
-export interface User {
+export interface UserPublic {
   id: string;
   username: string;
   email: string;
-  password_hash: string;
   hero_id: string | null;
   created_at: Date;
-  updated_at: Date;
 }

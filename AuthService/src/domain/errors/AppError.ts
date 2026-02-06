@@ -10,34 +10,6 @@ export class AppError extends Error {
   }
 }
 
-export class UnauthorizedError extends AppError {
-  constructor(message: string = 'Unauthorized') {
-    super(message, 401);
-    this.name = 'UnauthorizedError';
-  }
-}
-
-export class BadRequestError extends AppError {
-  constructor(message: string = 'Bad Request') {
-    super(message, 400);
-    this.name = 'BadRequestError';
-  }
-}
-
-export class ConflictError extends AppError {
-  constructor(message: string = 'Conflict') {
-    super(message, 409);
-    this.name = 'ConflictError';
-  }
-}
-
-export class NotFoundError extends AppError {
-  constructor(message: string = 'Not Found') {
-    super(message, 404);
-    this.name = 'NotFoundError';
-  }
-}
-
 export const errorHandler = (
   err: Error,
   req: Request,
