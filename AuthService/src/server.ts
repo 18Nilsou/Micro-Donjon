@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 import { AuthController } from './controllers/AuthController';
 import { AuthService } from './services/AuthService';
 import { initDatabase } from './config/database';
-import { errorHandler } from './errorHandling';
+import { errorHandler } from './domain/errors/AppError';
 
 dotenv.config();
 

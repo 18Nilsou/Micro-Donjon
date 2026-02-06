@@ -3,5 +3,4 @@ export interface UserPublic {
   username: string;
   email: string;
   hero_id: string | null;
-  created_at: Date;
 }

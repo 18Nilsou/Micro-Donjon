@@ -6,7 +6,10 @@ import { UserPublic} from '../domain/models/UserPublic';
 import { RegisterRequest} from '../domain/models/RegisterRequest';
 import { LoginRequest} from '../domain/models/LoginRequest';
 import { AuthResponse } from '../domain/models/AuthResponse';
-import { UnauthorizedError, BadRequestError, ConflictError, NotFoundError} from '../domain/models/errors/*';
+import { UnauthorizedError } from '../domain/errors/UnauthorizedError';
+import { BadRequestError } from '../domain/errors/BadRequestError';
+import { ConflictError } from '../domain/errors/ConflictError';
+import { NotFoundError } from '../domain/errors/NotFoundError';
 import { RowDataPacket, ResultSetHeader } from 'mysql2';
 import jwt, { SignOptions, Secret } from 'jsonwebtoken';
 import { logPublisher } from '../config/logPublisher';
@@ -23,7 +26,6 @@ export class AuthService {
       username: user.username,
       email: user.email,
       hero_id: user.hero_id,
-      created_at: user.created_at
     };
   }
   private generateToken(userId: string): string {

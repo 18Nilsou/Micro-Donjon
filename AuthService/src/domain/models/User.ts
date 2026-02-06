@@ -4,6 +4,4 @@ export interface User {
   email: string;
   password_hash: string;
   hero_id: string | null;
-  created_at: Date;
-  updated_at: Date;
 }
