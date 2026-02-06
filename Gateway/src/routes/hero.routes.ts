@@ -115,6 +115,19 @@ router.post('/heroes/:id/inventory', async (req: Request, res: Response, next: N
   }
 });
 
+router.post('/heroes/:id/inventory', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await proxyRequest(
+      req,
+      res,
+      SERVICES.HERO,
+      `/heroes/${req.params.id}/inventory`,
+    );
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/heroes/:id/inventory/consume', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(
@@ -128,48 +141,7 @@ router.post('/heroes/:id/inventory/consume', async (req: Request, res: Response,
   }
 });
 
-// Alias for /inventory as /items
-router.post('/heroes/:id/items', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(
-      req,
-      res,
-      SERVICES.HERO,
-      `/heroes/${req.params.id}/inventory`,
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post('/heroes/:id/items/consume', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(
-      req,
-      res,
-      SERVICES.HERO,
-      `/heroes/${req.params.id}/inventory/consume`,
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
 router.get('/heroes/:id/inventory', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(
-      req,
-      res,
-      SERVICES.HERO,
-      `/heroes/${req.params.id}/inventory`,
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Alias for /inventory as /items
-router.get('/heroes/:id/items', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(
       req,

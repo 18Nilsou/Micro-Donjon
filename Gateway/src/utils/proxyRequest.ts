@@ -10,7 +10,7 @@ export const proxyRequest = async (
 ): Promise<void> => {
   try {
     const authReq = req as AuthenticatedRequest;
-    
+
     const config: AxiosRequestConfig = {
       method: req.method,
       url: `${serviceUrl}${path}`,

@@ -7,21 +7,9 @@ export class GameController {
 
   registerRoutes(app: Express) {
     app.post('/game/start', this.startGame.bind(this));
-    app.post('/game', this.createGame.bind(this));
     app.put('/game', this.updateGame.bind(this));
     app.get('/game', this.getGame.bind(this));
     app.delete('/game', this.deleteGame.bind(this));
-  }
-
-  async createGame(req: Request, res: Response) {
-    try {
-      const { hero, dungeon } = req.body;
-
-      const game = await this.gameService.startGame(hero, dungeon);
-      res.status(201).json(game);
-    } catch (error) {
-      res.status(500).json({ error: (error as Error).message });
-    }
   }
 
   async startGame(req: Request, res: Response) {

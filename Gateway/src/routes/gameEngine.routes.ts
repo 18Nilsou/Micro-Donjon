@@ -4,7 +4,6 @@ import { proxyRequest } from '../utils/proxyRequest';
 
 const router = Router();
 
-// Game routes - IMPORTANT: /game/start must come before /game to prevent route conflicts
 router.post('/game/start', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/game/start');
@@ -111,118 +110,6 @@ router.put('/fight', async (req: Request, res: Response, next: NextFunction) => 
 router.delete('/fight', async (req: Request, res: Response, next: NextFunction) => {
   try {
     await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/fight');
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Dungeon routes (via Game Engine)
-router.post('/dungeon', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/dungeon');
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get('/dungeon/:id', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(req, res, SERVICES.GAME_ENGINE, `/dungeon/${req.params.id}`);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Mob routes (via Game Engine)
-router.get('/mob/:mobId', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(
-      req,
-      res,
-      SERVICES.GAME_ENGINE,
-      `/mob/${req.params.mobId}`,
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.put('/mob/:mobId', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(
-      req,
-      res,
-      SERVICES.GAME_ENGINE,
-      `/mob/${req.params.mobId}`,
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.delete('/mob/:mobId', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(
-      req,
-      res,
-      SERVICES.GAME_ENGINE,
-      `/mob/${req.params.mobId}`,
-    );
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get('/mob', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/mob');
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.post('/mob', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/mob');
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.delete('/mob', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/mob');
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Item routes (via Game Engine)
-router.get('/items', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(req, res, SERVICES.GAME_ENGINE, '/items');
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Random item route - must be before :itemId to avoid matching "random" as an ID
-router.get('/items/random', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(req, res, SERVICES.ITEM, '/items/random');
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get('/items/:itemId', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    await proxyRequest(
-      req,
-      res,
-      SERVICES.GAME_ENGINE,
-      `/items/${req.params.itemId}`,
-    );
   } catch (error) {
     next(error);
   }

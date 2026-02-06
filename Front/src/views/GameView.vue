@@ -94,7 +94,6 @@ const loadMobsCatalog = async () => {
 const moveHero = async (x, y) => {
   if (!currentHero.value || !gameState.value) return;
   
-  // Optimistic update - update UI immediately
   const previousPosition = { ...gameState.value.heroPosition };
   const previousRoomId = gameState.value.currentRoomId;
   gameState.value.heroPosition = { x, y };
@@ -154,10 +153,9 @@ const handleFightUpdate = async (updatedFight) => {
       currentMob.value = null;
       error.value = null;
     }, 3000);
-    return; // Don't continue with normal flow
+    return;
   }
   
-  // Refresh hero data to show updated HP (only if hero is alive)
   if (gameState.value?.heroId) {
     try {
       currentHero.value = await api.getHero(gameState.value.heroId);
@@ -166,7 +164,6 @@ const handleFightUpdate = async (updatedFight) => {
     }
   }
   
-  // Refresh mob data from game state
   try {
     const freshGameState = await api.getGame();
     if (freshGameState?.mobs && updatedFight.mobIds && updatedFight.mobIds.length > 0) {
@@ -185,7 +182,7 @@ const handleFightUpdate = async (updatedFight) => {
       
       try {
         const item = await api.getRandomItem();
-        await api.addItemToHero(currentHero.value.id, { id: item.id, quantity: 1 });
+        await api.addItemToHero(currentHero.value.id, item);
         currentHero.value = await api.getHero(currentHero.value.id);
         error.value = `Victory! You obtained: ${item.name}!`;
       } catch (err) {
@@ -209,7 +206,8 @@ const handleFightUpdate = async (updatedFight) => {
 const handleConsumeItem = async (itemId) => {
   if (!currentHero.value) return;
   try {
-    await api.consumeHeroItem(currentHero.value.id, itemId);
+    const item = await api.getItemById(itemId);
+    await api.consumeHeroItem(currentHero.value.id, item);
     currentHero.value = await api.getHero(currentHero.value.id);
   } catch (err) {
     error.value = 'Failed to consume item: ' + err.message;
@@ -301,7 +299,6 @@ onMounted(async () => {
 
 <style scoped>
 .game-container {
-  /* max-width: 1800px; */
   margin: 0 auto;
   padding: 20px;
 }

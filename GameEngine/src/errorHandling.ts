@@ -1,6 +1,6 @@
-import { NotFoundError } from "./domain/errors/NotFoundError";
+import { HTTPError } from "./domain/errors/HTTPError";
 
-const handledErrors = [NotFoundError];
+const handledErrors = [HTTPError];
 
 export function errorHandler(err, req, res, next) {
   // Don't handle if response already sent

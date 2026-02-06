@@ -68,16 +68,16 @@ class ApiService {
   }
 
   async addItemToHero(heroId, item) {
-    return this.request(`/heroes/${heroId}/items`, {
+    return this.request(`/heroes/${heroId}/inventory`, {
       method: "POST",
       body: JSON.stringify(item),
     });
   }
 
-  async consumeHeroItem(heroId, itemId) {
-    return this.request(`/heroes/${heroId}/items/consume`, {
+  async consumeHeroItem(heroId, item) {
+    return this.request(`/heroes/${heroId}/inventory/consume`, {
       method: "POST",
-      body: JSON.stringify({ id: itemId }),
+      body: JSON.stringify(item),
     });
   }
 
@@ -168,6 +168,10 @@ class ApiService {
   // Item endpoints
   async getItems() {
     return this.request("/items");
+  }
+
+  async getItemById(id) {
+    return this.request(`/items/${id}`);
   }
 
   async getRandomItem() {

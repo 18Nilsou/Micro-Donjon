@@ -3,7 +3,7 @@ import { redisClient } from '../config/redis';
 import { Game } from '../domain/models/Game';
 import { Hero } from '../domain/models/Hero';
 import { logPublisher } from '../config/logPublisher';
-import { NotFoundError } from '../domain/errors/NotFoundError';
+import { NotFoundError } from '../domain/errors';
 import { Dungeon } from '../domain/models/Dungeon';
 
 export class GameService {
@@ -25,11 +25,9 @@ export class GameService {
       items: []
     };
 
-    await this.save(game);
-    await this.save({ ...game, id: 'current' });
-    if (logPublisher) {
-      await logPublisher.logGameEvent('GAME_STARTED', { gameJson: JSON.stringify(game) });
-    }
+    await this.saveGameState(game);
+
+    await logPublisher.logGameEvent('GAME_STARTED', { gameJson: JSON.stringify(game) });
 
     return game;
   }
@@ -37,15 +35,11 @@ export class GameService {
   async getGame(): Promise<Game> {
     const current = await this.findById('current');
     if (!current) {
-      if (logPublisher) {
-        await logPublisher.logError('GAME_RETRIEVE_FAILED', { reason: 'No current game found' });
-      }
+      await logPublisher.logError('GAME_RETRIEVE_FAILED', { reason: 'No current game found' });
       throw new NotFoundError('No current game');
     }
 
-    if (logPublisher) {
-      await logPublisher.logGameEvent('GAME_RETRIEVED', { gameJson: 'all' });
-    }
+    await logPublisher.logGameEvent('GAME_RETRIEVED', { gameJson: 'all' });
 
     return current;
   }
@@ -53,11 +47,9 @@ export class GameService {
   async updateGame(updates: Partial<Game>): Promise<Game> {
     const current = await this.getGame();
     const updated = { ...current, ...updates };
-    await this.save(updated);
-    await this.save({ ...updated, id: 'current' });
-    if (logPublisher) {
-      await logPublisher.logGameEvent('GAME_UPDATED', { gameJson: 'all' });
-    }
+    await this.saveGameState(updated);
+
+    await logPublisher.logGameEvent('GAME_UPDATED', { gameJson: 'all' });
     return updated;
   }
 
@@ -65,9 +57,15 @@ export class GameService {
     const current = await this.getGame();
     await this.delete(current.id);
     await this.delete('current');
-    if (logPublisher) {
-      await logPublisher.logGameEvent('GAME_DELETED', { gameJson: 'all' });
-    }
+
+    await logPublisher.logGameEvent('GAME_DELETED', { gameJson: 'all' });
+  }
+
+  async saveGameState(game: Game): Promise<void> {
+    await Promise.all([
+      this.save(game),
+      this.save({ ...game, id: 'current' })
+    ]);
   }
 
   async save(game: Game): Promise<void> {
@@ -88,9 +86,7 @@ export class GameService {
   }
 
   async delete(id: string): Promise<void> {
-    if (logPublisher) {
-      await logPublisher.logGameEvent('GAME_DELETED', { gameId: id });
-    }
+    await logPublisher.logGameEvent('GAME_DELETED', { gameId: id });
     await redisClient.del(`${this.GAMES_KEY}${id}`);
   }
 }

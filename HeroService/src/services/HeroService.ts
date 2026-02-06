@@ -6,29 +6,12 @@ import { redisClient } from "../config/redis";
 import { logPublisher } from "../config/logPublisher";
 import { Class } from "../domain/models/Class";
 import { CreateHeroRequest } from "../domain/models/CreateHeroRequest";
-import axios from "axios";
-
-type ItemEffect = 'Attack' | 'Heal' | 'HealthPointMax';
-type ItemType = 'Weapon' | 'Consumable' | 'Armor';
-
-interface ItemDetails {
-    id: number;
-    name: string;
-    effect: ItemEffect;
-    value: number;
-    itemType: ItemType;
-}
+import { ItemDetails } from "../domain/models/ItemDetails";
 
 export class HeroService {
 
     private readonly HEROES_KEY = 'heroes';
     private readonly USER_HEROES_KEY_PREFIX = 'user_heroes:';
-    private readonly ITEM_SERVICE_URL = process.env.ITEM_SERVICE_URL || 'http://localhost:3004';
-
-    private async getItemById(itemId: number): Promise<ItemDetails> {
-        const response = await axios.get(`${this.ITEM_SERVICE_URL}/items/${itemId}`);
-        return response.data as ItemDetails;
-    }
 
     private applyItemEffect(hero: Hero, item: ItemDetails, quantity: number) {
         const totalValue = item.value * quantity;
@@ -94,7 +77,7 @@ export class HeroService {
     }
 
     async listClasses(): Promise<Class[]> {
-        const classes: Class[] = require('../../data/classes.json');
+        const classes: Class[] = require('../../data/classes_data.json');
 
         if (logPublisher) {
             await logPublisher.logHeroEvent('CLASSES_RETRIEVED', { classesJson: 'all' });
@@ -175,28 +158,6 @@ export class HeroService {
         if (logPublisher) {
             await logPublisher.logHeroEvent('HERO_DELETED', { heroId });
         }
-    }
-
-    private async getAndVerifyOwnership(heroId: string, requestingUserId: string): Promise<Hero> {
-        const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
-
-        if (!heroData) {
-            if (logPublisher) {
-                await logPublisher.logError(`HERO_GET_AND_VERIFY_OWNERSHIP`, { heroId, requestingUserId });
-            }
-            throw new NotFoundError(`Hero with id ${heroId} not found.`);
-        }
-
-        const hero = JSON.parse(heroData) as Hero;
-
-        if (hero.userId !== requestingUserId) {
-            if (logPublisher) {
-                await logPublisher.logError(`HERO_OWNERSHIP_VERIFICATION_FAILED`, { heroId, requestingUserId });
-            }
-            throw new ForbiddenError(`Access denied: You don't own this hero.`);
-        }
-
-        return hero;
     }
 
     async updateHealthPoints(heroId: string, healthPoints: number): Promise<Hero> {
@@ -327,17 +288,15 @@ export class HeroService {
         return hero.inventory;
     }
 
-    async addItemToInventory(id: number, quantity: number, heroId: string, requestingUserId: string) {
+    async addItemToInventory(item: ItemDetails, quantity: number, heroId: string, requestingUserId: string) {
         const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
 
-        const item = await this.getItemById(id);
-
-        const existingItem = hero.inventory.find(item => item.id === id);
+        const existingItem = hero.inventory.find(inventoryItem => inventoryItem.id === item.id);
 
         if (existingItem) {
             existingItem.quantity += quantity;
         } else {
-            hero.inventory.push({ id, quantity });
+            hero.inventory.push({ id: item.id, quantity });
         }
 
         if (item.itemType !== 'Consumable') {
@@ -352,7 +311,7 @@ export class HeroService {
         if (logPublisher) {
             await logPublisher.logHeroEvent('ITEM_ADDED_TO_INVENTORY', {
                 heroId,
-                itemId: id,
+                itemId: item.id,
                 quantity,
                 itemType: item.itemType,
                 effect: item.effect,
@@ -361,21 +320,20 @@ export class HeroService {
         }
     }
 
-    async consumeItemFromInventory(itemId: number, heroId: string, requestingUserId: string): Promise<Hero> {
+    async consumeItemFromInventory(item: ItemDetails, heroId: string, requestingUserId: string): Promise<Hero> {
         const hero = await this.getAndVerifyOwnership(heroId, requestingUserId);
 
-        const inventoryItem = hero.inventory.find(item => item.id === itemId);
+        const inventoryItem = hero.inventory.find(inventoryItem => inventoryItem.id === item.id);
         if (!inventoryItem || inventoryItem.quantity <= 0) {
             if (logPublisher) {
-                await logPublisher.logError(`ITEM_CONSUME_FAILED`, { heroId, itemId, reason: 'Item not found in inventory' });
+                await logPublisher.logError(`ITEM_CONSUME_FAILED`, { heroId, itemId: item.id, reason: 'Item not found in inventory' });
             }
-            throw new NotFoundError(`Item with id ${itemId} not found in inventory.`);
+            throw new NotFoundError(`Item with id ${item.id} not found in inventory.`);
         }
 
-        const item = await this.getItemById(itemId);
         if (item.itemType !== 'Consumable') {
             if (logPublisher) {
-                await logPublisher.logError(`ITEM_CONSUME_FAILED`, { heroId, itemId, reason: 'Item is not consumable' });
+                await logPublisher.logError(`ITEM_CONSUME_FAILED`, { heroId, itemId: item.id, reason: 'Item is not consumable' });
             }
             throw new ForbiddenError('Only consumable items can be consumed.');
         }
@@ -384,7 +342,7 @@ export class HeroService {
 
         inventoryItem.quantity -= 1;
         if (inventoryItem.quantity <= 0) {
-            hero.inventory = hero.inventory.filter(item => item.id !== itemId);
+            hero.inventory = hero.inventory.filter(inventoryItem => inventoryItem.id !== item.id);
         }
 
         await redisClient.set(
@@ -395,10 +353,32 @@ export class HeroService {
         if (logPublisher) {
             await logPublisher.logHeroEvent('ITEM_CONSUMED', {
                 heroId,
-                itemId,
+                itemId: item.id,
                 effect: item.effect,
                 value: item.value
             });
+        }
+
+        return hero;
+    }
+
+    private async getAndVerifyOwnership(heroId: string, requestingUserId: string): Promise<Hero> {
+        const heroData = await redisClient.get(`${this.HEROES_KEY}${heroId}`);
+
+        if (!heroData) {
+            if (logPublisher) {
+                await logPublisher.logError(`HERO_GET_AND_VERIFY_OWNERSHIP`, { heroId, requestingUserId });
+            }
+            throw new NotFoundError(`Hero with id ${heroId} not found.`);
+        }
+
+        const hero = JSON.parse(heroData) as Hero;
+
+        if (hero.userId !== requestingUserId) {
+            if (logPublisher) {
+                await logPublisher.logError(`HERO_OWNERSHIP_VERIFICATION_FAILED`, { heroId, requestingUserId });
+            }
+            throw new ForbiddenError(`Access denied: You don't own this hero.`);
         }
 
         return hero;

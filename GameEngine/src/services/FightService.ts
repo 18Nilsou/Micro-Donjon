@@ -3,6 +3,7 @@ import { heroEventPublisher } from "../config/heroEventPublisher";
 import { Fight } from "../domain/models/Fight";
 import { GameService } from "./GameService";
 import { Hero } from "../domain/models/Hero";
+import { NotFoundError, BadRequestError, InternalServerError } from "../domain/errors";
 
 export class FightService {
 
@@ -14,78 +15,33 @@ export class FightService {
       game.currentFight = fight;
       game.currentFightId = fight.id;
 
-      await Promise.all([
-        this.gameService.save(game),
-        this.gameService.save({ ...game, id: 'current' })
-      ]);
+      await this.gameService.saveGameState(game);
 
       const verifyGame = await this.gameService.findById('current');
       if (!verifyGame?.currentFight || verifyGame.currentFight.id !== fight.id) {
-        throw new Error('Failed to persist fight state');
+        throw new InternalServerError('Failed to persist fight state');
       }
     }
 
-    if (logPublisher) {
-      await logPublisher.logGameEvent('FIGHT_STARTED', { heroJson: 'all' });
-    }
+    await logPublisher.logGameEvent('FIGHT_STARTED', { heroJson: 'all' });
+
     return fight;
   }
 
   async getFight(): Promise<Fight> {
     const game = await this.gameService.findById('current');
     if (!game || !game.currentFight) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_RETRIEVAL_FAILED', { reason: 'No active fight found in game state' });
-      }
-      throw new Error('No active fight');
+      await logPublisher.logError('FIGHT_RETRIEVAL_FAILED', { reason: 'No active fight found in game state' });
+
+      throw new NotFoundError('No active fight');
     }
-    if (logPublisher) {
-      await logPublisher.logGameEvent('FIGHT_RETRIEVED', { fightId: game.currentFight.id });
-    }
+    await logPublisher.logGameEvent('FIGHT_RETRIEVED', { fightId: game.currentFight.id });
+
     return game.currentFight;
   }
 
   async attack(fightId: string, hero: Hero): Promise<Fight> {
-    // Get fight from game state
-    const game = await this.gameService.findById('current');
-
-    if (!game || !game.currentFight || game.currentFight.id !== fightId) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_ATTACK_FAILED', { reason: 'Fight not found in game state', expectedFightId: fightId, actualFightId: game?.currentFight?.id || 'none' });
-      }
-      throw new Error(`Fight not found. Expected: ${fightId}, Got: ${game?.currentFight?.id || 'none'}`);
-    }
-
-    const fight = game.currentFight;
-    if (fight.status !== 'active') {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_ATTACK_FAILED', { reason: 'Fight is not active', fightStatus: fight.status });
-      }
-      throw new Error('Fight is not active');
-    }
-
-    if (fight.turn !== 'hero') {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_ATTACK_FAILED', { reason: 'Not hero turn', currentTurn: fight.turn });
-      }
-      throw new Error('Not hero turn');
-    }
-
-    // Get mob from game state
-    if (!game.mobs) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_ATTACK_FAILED', { reason: 'No mobs found in game state' });
-      }
-      throw new Error('Game or mob data not found');
-    }
-
-    const mobInstance = game.mobs.find(m => m.id === fight.mobIds[0]);
-    if (!mobInstance) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_ATTACK_FAILED', { reason: 'Mob instance not found in game state', mobId: fight.mobIds[0] });
-      }
-      throw new Error('Mob instance not found in game state');
-    }
+    const { fight, game, mobInstance } = await this.validateAndGetFightContext(fightId);
 
     const heroDamage = Math.max(1, hero.attackPoints);
     const newMobHp = Math.max(0, mobInstance.healthPoints - heroDamage);
@@ -95,8 +51,7 @@ export class FightService {
       mobInstance.status = 'dead';
     }
 
-    fight.actions = fight.actions || [];
-    fight.actions.push({
+    this.recordFightAction(fight, {
       turn: fight.turnNumber || 1,
       actor: 'hero',
       action: 'attack',
@@ -108,7 +63,7 @@ export class FightService {
     if (newMobHp <= 0) {
       fight.status = 'heroWon';
       fight.endTime = new Date().toISOString();
-      fight.actions.push({
+      this.recordFightAction(fight, {
         turn: fight.turnNumber || 1,
         actor: 'system',
         action: 'victory',
@@ -119,209 +74,66 @@ export class FightService {
       game.currentFight = undefined;
       await Promise.all([
         heroEventPublisher.publishHeroLevelUp(hero.id),
-        this.gameService.save(game),
-        this.gameService.save({ ...game, id: 'current' })
+        this.gameService.saveGameState(game)
       ]);
 
-      if (logPublisher) {
-        await logPublisher.logGameEvent('FIGHT_WON', { gameJson: 'all', mobId: mobInstance.id });
-      }
-
+      await logPublisher.logGameEvent('FIGHT_WON', { gameJson: 'all', mobId: mobInstance.id });
       return fight;
     }
 
-    const mobDamage = Math.max(1, (mobInstance.attackPoints || 5));
-    const newHeroHp = Math.max(0, hero.healthPoints - mobDamage);
+    const newHeroHp = await this.applyMobDamageToHero(fight, hero, mobInstance);
 
-    // Publish hero HP update to message queue
-    await heroEventPublisher.publishHeroUpdate(hero.id, newHeroHp);
-
-    fight.actions.push({
-      turn: fight.turnNumber || 1,
-      actor: 'mob',
-      action: 'attack',
-      target: hero.name,
-      damage: mobDamage,
-      result: `${mobInstance.name || 'Monster'} attacks ${hero.name} for ${mobDamage} damage!`
-    });
-
-    // Check if hero is dead
     if (newHeroHp <= 0) {
-      fight.status = 'heroLost';
-      fight.endTime = new Date().toISOString();
-      fight.actions.push({
-        turn: fight.turnNumber || 1,
-        actor: 'system',
-        action: 'defeat',
-        result: `${hero.name} has been defeated...`
-      });
-
-      // Publish hero delete event to message queue
-      await heroEventPublisher.publishHeroDelete(hero.id);
-
-      await this.gameService.delete('current');
-      await this.gameService.delete(game.id);
-
-      if (logPublisher) {
-        await logPublisher.logGameEvent('FIGHT_LOST', { gameJson: 'all', mobId: mobInstance.id });
-        await logPublisher.logGameEvent('GAME_OVER', { heroId: hero.id });
-      }
-
+      await this.handleHeroDeath(fight, game, hero, mobInstance);
       return fight;
     }
 
     fight.turnNumber = (fight.turnNumber || 1) + 1;
-
     game.currentFight = fight;
-    await Promise.all([
-      this.gameService.save(game),
-      this.gameService.save({ ...game, id: 'current' })
-    ]);
+    await this.gameService.saveGameState(game);
 
     return fight;
   }
 
   async defend(fightId: string, hero: Hero): Promise<Fight> {
-    // Get fight from game state
-    const game = await this.gameService.findById('current');
-    if (!game || !game.currentFight || game.currentFight.id !== fightId) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_DEFEND_FAILED', { reason: 'Fight not found in game state', expectedFightId: fightId, actualFightId: game?.currentFight?.id || 'none' });
-      }
-      throw new Error('Fight not found');
-    }
+    const { fight, game, mobInstance } = await this.validateAndGetFightContext(fightId);
 
-    const fight = game.currentFight;
-    if (fight.status !== 'active') {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_DEFEND_FAILED', { reason: 'Fight is not active', fightStatus: fight.status });
-      }
-      throw new Error('Fight is not active');
-    }
-
-    if (fight.turn !== 'hero') {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_DEFEND_FAILED', { reason: 'Not hero turn', currentTurn: fight.turn });
-      }
-      throw new Error('Not hero turn');
-    }
-
-    if (!game.mobs) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_DEFEND_FAILED', { reason: 'No mobs found in game state' });
-      }
-      throw new Error('Game or mob data not found');
-    }
-
-    const mobInstance = game.mobs.find(m => m.id === fight.mobIds[0]);
-    if (!mobInstance) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_DEFEND_FAILED', { reason: 'Mob instance not found in game state', mobId: fight.mobIds[0] });
-      }
-      throw new Error('Mob instance not found in game state');
-    }
-
-    fight.actions = fight.actions || [];
-    fight.actions.push({
+    this.recordFightAction(fight, {
       turn: fight.turnNumber || 1,
       actor: 'hero',
       action: 'defend',
       result: `${hero.name} takes a defensive stance!`
     });
 
-    const mobDamage = Math.max(1, (mobInstance.attackPoints || 5));
-    const reducedDamage = Math.floor(mobDamage / 2);
-    const newHeroHp = Math.max(0, hero.healthPoints - reducedDamage);
+    const newHeroHp = await this.applyMobDamageToHero(
+      fight,
+      hero,
+      mobInstance,
+      0.5,
+      `${mobInstance.name || 'Monster'} attacks but ${hero.name} blocks some damage! (${this.calculateMobDamage(mobInstance, 0.5)} damage)`
+    );
 
-    // Publish hero HP update to message queue
-    await heroEventPublisher.publishHeroUpdate(hero.id, newHeroHp);
-
-    fight.actions.push({
-      turn: fight.turnNumber || 1,
-      actor: 'mob',
-      action: 'attack',
-      target: hero.name,
-      damage: reducedDamage,
-      result: `${mobInstance.name || 'Monster'} attacks but ${hero.name} blocks some damage! (${reducedDamage} damage)`
-    });
-
-    // Check if hero is dead (unlikely when defending)
     if (newHeroHp <= 0) {
-      fight.status = 'heroLost';
-      fight.endTime = new Date().toISOString();
-      fight.actions.push({
-        turn: fight.turnNumber || 1,
-        actor: 'system',
-        action: 'defeat',
-        result: `${hero.name} has been defeated...`
-      });
-
-      // Publish hero delete event to message queue
-      await heroEventPublisher.publishHeroDelete(hero.id);
-
-      await this.gameService.delete('current');
-      await this.gameService.delete(game.id);
-
-      if (logPublisher) {
-        await logPublisher.logGameEvent('FIGHT_LOST', { gameJson: 'all' });
-        await logPublisher.logGameEvent('GAME_OVER', { heroId: hero.id });
-      }
-
+      await this.handleHeroDeath(fight, game, hero, mobInstance);
       return fight;
     }
 
     fight.turnNumber = (fight.turnNumber || 1) + 1;
-
     game.currentFight = fight;
-    await Promise.all([
-      this.gameService.save(game),
-      this.gameService.save({ ...game, id: 'current' })
-    ]);
+    await this.gameService.saveGameState(game);
 
     return fight;
   }
 
   async flee(fightId: string, hero: Hero): Promise<Fight> {
-    // Get fight from game state
-    const game = await this.gameService.findById('current');
-    if (!game || !game.currentFight || game.currentFight.id !== fightId) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_FLEE_FAILED', { reason: 'Fight not found in game state', expectedFightId: fightId, actualFightId: game?.currentFight?.id || 'none' });
-      }
-      throw new Error('Fight not found');
-    }
-
-    const fight = game.currentFight;
-    if (fight.status !== 'active') {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_FLEE_FAILED', { reason: 'Fight is not active', fightStatus: fight.status });
-      }
-      throw new Error('Fight is not active');
-    }
+    const { fight, game, mobInstance } = await this.validateAndGetFightContext(fightId);
 
     const fleeRoll = Math.random();
-
-    if (!game.mobs) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_FLEE_FAILED', { reason: 'No mobs found in game state' });
-      }
-      throw new Error('Game or mob data not found');
-    }
-
-    const mobInstance = game.mobs.find(m => m.id === fight.mobIds[0]);
-    if (!mobInstance) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_FLEE_FAILED', { reason: 'Mob instance not found in game state', mobId: fight.mobIds[0] });
-      }
-      throw new Error('Mob instance not found in game state');
-    }
-
-    fight.actions = fight.actions || [];
 
     if (fleeRoll < 0.6) {
       fight.status = 'fled';
       fight.endTime = new Date().toISOString();
-      fight.actions.push({
+      this.recordFightAction(fight, {
         turn: fight.turnNumber || 1,
         actor: 'hero',
         action: 'flee',
@@ -330,72 +142,35 @@ export class FightService {
 
       game.currentFightId = undefined;
       game.currentFight = undefined;
-      await Promise.all([
-        this.gameService.save(game),
-        this.gameService.save({ ...game, id: 'current' })
-      ]);
+      await this.gameService.saveGameState(game);
 
-      if (logPublisher) {
-        await logPublisher.logGameEvent('FIGHT_FLED', { gameJson: 'all' });
-      }
-
+      await logPublisher.logGameEvent('FIGHT_FLED', { gameJson: 'all' });
       return fight;
-    } else {
-      fight.actions.push({
-        turn: fight.turnNumber || 1,
-        actor: 'hero',
-        action: 'flee',
-        result: `${hero.name} tried to flee but failed!`
-      });
-
-      const mobDamage = Math.max(1, (mobInstance.attackPoints || 5));
-      const newHeroHp = Math.max(0, hero.healthPoints - mobDamage);
-
-      // Publish hero HP update to message queue
-      await heroEventPublisher.publishHeroUpdate(hero.id, newHeroHp);
-
-      fight.actions.push({
-        turn: fight.turnNumber || 1,
-        actor: 'mob',
-        action: 'attack',
-        target: hero.name,
-        damage: mobDamage,
-        result: `${mobInstance.name || 'Monster'} takes advantage and attacks for ${mobDamage} damage!`
-      });
-
-      if (newHeroHp <= 0) {
-        fight.status = 'heroLost';
-        fight.endTime = new Date().toISOString();
-        fight.actions.push({
-          turn: fight.turnNumber || 1,
-          actor: 'system',
-          action: 'defeat',
-          result: `${hero.name} has been defeated...`
-        });
-
-        // Publish hero delete event to message queue
-        await heroEventPublisher.publishHeroDelete(hero.id);
-
-        await this.gameService.delete('current');
-        await this.gameService.delete(game.id);
-
-        if (logPublisher) {
-          await logPublisher.logGameEvent('FIGHT_LOST', { gameJson: 'all' });
-          await logPublisher.logGameEvent('GAME_OVER', { heroId: hero.id });
-        }
-
-        return fight;
-      }
     }
 
-    // Delete game state (game over)
-    await this.gameService.delete('current');
-    await this.gameService.delete(game.id);
+    this.recordFightAction(fight, {
+      turn: fight.turnNumber || 1,
+      actor: 'hero',
+      action: 'flee',
+      result: `${hero.name} tried to flee but failed!`
+    });
 
-    if (logPublisher) {
-      await logPublisher.logGameEvent('FIGHT_LOST', { gameJson: 'all' });
-      await logPublisher.logGameEvent('GAME_OVER', { heroId: hero.id });
+    const newHeroHp = await this.applyMobDamageToHero(
+      fight,
+      hero,
+      mobInstance,
+      1,
+      `${mobInstance.name || 'Monster'} takes advantage and attacks for ${this.calculateMobDamage(mobInstance)} damage!`
+    );
+
+    if (newHeroHp <= 0) {
+      await this.handleHeroDeath(fight, game, hero, mobInstance);
+      return fight;
     }
+
+    fight.turnNumber = (fight.turnNumber || 1) + 1;
+    game.currentFight = fight;
+    await this.gameService.saveGameState(game);
 
     return fight;
   }
@@ -405,17 +180,12 @@ export class FightService {
     const game = await this.gameService.findById('current');
 
     if (!game || !game.currentFight) {
-      if (logPublisher) {
-        await logPublisher.logError('FIGHT_UPDATE_FAILED', { reason: 'No active fight found in game state' });
-      }
-      throw new Error('No active fight');
+      await logPublisher.logError('FIGHT_UPDATE_FAILED', { reason: 'No active fight found in game state' });
+      throw new NotFoundError('No active fight');
     }
 
     game.currentFight = { ...game.currentFight, ...updates };
-    await Promise.all([
-      this.gameService.save(game),
-      this.gameService.save({ ...game, id: 'current' })
-    ]);
+    await this.gameService.saveGameState(game);
     return game.currentFight;
   }
 
@@ -426,13 +196,110 @@ export class FightService {
       game.currentFight = undefined;
       game.currentFightId = undefined;
 
-      await Promise.all([
-        this.gameService.save(game),
-        this.gameService.save({ ...game, id: 'current' })
-      ]);
-      if (logPublisher) {
-        await logPublisher.logGameEvent('FIGHT_DELETED', { gameID: game.id });
-      }
+      await this.gameService.saveGameState(game);
+      await logPublisher.logGameEvent('FIGHT_DELETED', { gameID: game.id });
     }
+  }
+
+  private async validateAndGetFightContext(fightId: string) {
+    const game = await this.gameService.findById('current');
+
+    if (!game || !game.currentFight || game.currentFight.id !== fightId) {
+      await logPublisher.logError('FIGHT_VALIDATION_FAILED', {
+        reason: 'Fight not found in game state',
+        expectedFightId: fightId,
+        actualFightId: game?.currentFight?.id || 'none'
+      });
+      throw new NotFoundError(`Fight not found. Expected: ${fightId}, Got: ${game?.currentFight?.id || 'none'}`);
+    }
+
+    const fight = game.currentFight;
+
+    if (fight.status !== 'active') {
+      await logPublisher.logError('FIGHT_VALIDATION_FAILED', {
+        reason: 'Fight is not active',
+        fightStatus: fight.status
+      });
+      throw new BadRequestError('Fight is not active');
+    }
+
+    if (fight.turn !== 'hero') {
+      await logPublisher.logError('FIGHT_VALIDATION_FAILED', {
+        reason: 'Not hero turn',
+        currentTurn: fight.turn
+      });
+      throw new BadRequestError('Not hero turn');
+    }
+
+    if (!game.mobs) {
+      await logPublisher.logError('FIGHT_VALIDATION_FAILED', {
+        reason: 'No mobs found in game state'
+      });
+      throw new InternalServerError('Game or mob data not found');
+    }
+
+    const mobInstance = game.mobs.find(m => m.id === fight.mobIds[0]);
+    if (!mobInstance) {
+      await logPublisher.logError('FIGHT_VALIDATION_FAILED', {
+        reason: 'Mob instance not found in game state',
+        mobId: fight.mobIds[0]
+      });
+      throw new NotFoundError('Mob instance not found in game state');
+    }
+
+    return { fight, game, mobInstance };
+  }
+
+  private recordFightAction(fight: Fight, action: any): void {
+    fight.actions = fight.actions || [];
+    fight.actions.push(action);
+  }
+
+  private async handleHeroDeath(fight: Fight, game: any, hero: Hero, mobInstance: any): Promise<void> {
+    fight.status = 'heroLost';
+    fight.endTime = new Date().toISOString();
+    this.recordFightAction(fight, {
+      turn: fight.turnNumber || 1,
+      actor: 'system',
+      action: 'defeat',
+      result: `${hero.name} has been defeated...`
+    });
+
+    await heroEventPublisher.publishHeroDelete(hero.id);
+    await this.gameService.delete('current');
+    await this.gameService.delete(game.id);
+    await logPublisher.logGameEvent('FIGHT_LOST', { gameJson: 'all', mobId: mobInstance.id });
+    await logPublisher.logGameEvent('GAME_OVER', { heroId: hero.id });
+  }
+
+  private calculateMobDamage(mobInstance: any, modifier: number = 1): number {
+    return Math.max(1, Math.floor((mobInstance.attackPoints || 5) * modifier));
+  }
+
+  private async applyMobDamageToHero(
+    fight: Fight,
+    hero: Hero,
+    mobInstance: any,
+    damageModifier: number = 1,
+    customMessage?: string
+  ): Promise<number> {
+    const mobDamage = this.calculateMobDamage(mobInstance, damageModifier);
+    const newHeroHp = Math.max(0, hero.healthPoints - mobDamage);
+
+    await heroEventPublisher.publishHeroUpdate(hero.id, newHeroHp);
+
+    const message = customMessage ||
+      `${mobInstance.name || 'Monster'} attacks ${hero.name} for ${mobDamage} damage!`;
+
+    this.recordFightAction(fight, {
+      turn: fight.turnNumber || 1,
+      actor: 'mob',
+      action: 'attack',
+      target: hero.name,
+      damage: mobDamage,
+      result: message
+    });
+
+    return newHeroHp;
   }
 }

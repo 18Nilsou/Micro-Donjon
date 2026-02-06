@@ -5,8 +5,8 @@ import { MoveResponse } from '../domain/models/MoveResponse';
 import { Fight } from '../domain/models/Fight';
 import { v4 as uuidv4 } from 'uuid';
 import { Dungeon } from '../domain/models/Dungeon';
-import { NotFoundError } from '../domain/errors/NotFoundError';
 import { Mob } from '../domain/models/Mob';
+import { NotFoundError, ConflictError } from '../domain/errors';
 
 export class HeroService {
 
@@ -19,29 +19,24 @@ export class HeroService {
 
   async moveHero(dungeon: Dungeon, commonMobs: Mob[], x: number, y: number): Promise<MoveResponse> {
     const game = await this.gameService.findById('current');
-    if (!game){
-      if (logPublisher) {
-        await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'No current game found' });
-      }
-      throw new Error('No current game');
-    } 
+    if (!game) {
+      await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'No current game found' });
+      throw new NotFoundError('No current game');
+    }
 
     // Check if player is in a fight - movement is blocked during combat
     if (game.currentFightId) {
-      if (logPublisher) {
-        await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'Hero is currently in a fight', fightId: game.currentFightId });
-      }
-      return { success: true, position: game.heroPosition, roomId: game.currentRoomId };
+      await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'Hero is currently in a fight', fightId: game.currentFightId });
+
+      throw new ConflictError('Cannot move while in combat');
     }
 
     // Get the dungeon to check room transitions
     const currentRoom = dungeon.rooms.find(room => room.id === game.currentRoomId);
 
     if (!currentRoom) {
-      if (logPublisher) {
-        await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'Current room not found in dungeon', roomId: game.currentRoomId });
-      }
-      throw new Error('Current room not found');
+      await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'Current room not found in dungeon', roomId: game.currentRoomId });
+      throw new NotFoundError('Current room not found');
     }
 
     // Validate room boundaries - if out of bounds, return current position without error
@@ -49,9 +44,7 @@ export class HeroService {
     const roomHeight = currentRoom.dimension?.height || 10;
 
     if (x < 0 || x >= roomWidth || y < 0 || y >= roomHeight) {
-      if (logPublisher) {
-        await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'Movement out of room boundaries', attemptedPosition: { x, y }, roomId: game.currentRoomId });
-      }
+      await logPublisher.logError('HERO_MOVE_FAILED', { reason: 'Movement out of room boundaries', attemptedPosition: { x, y }, roomId: game.currentRoomId });
       return { success: true, position: game.heroPosition, roomId: game.currentRoomId };
     }
 
@@ -63,14 +56,9 @@ export class HeroService {
       if (nextRoom) {
         game.currentRoomId = nextRoom.id;
         game.heroPosition = nextRoom.entrance;
-        await Promise.all([
-          this.gameService.save(game),
-          this.gameService.save({ ...game, id: 'current' })
-        ]);
+        await this.gameService.saveGameState(game);
 
-        if (logPublisher) {
-          await logPublisher.logGameEvent('ROOM_CHANGED', { heroJson: 'all', newRoom: nextRoom.order });
-        }
+        await logPublisher.logGameEvent('ROOM_CHANGED', { heroJson: 'all', newRoom: nextRoom.order });
 
         return { success: true, position: nextRoom.entrance, roomId: nextRoom.id };
       }
@@ -82,14 +70,9 @@ export class HeroService {
       if (prevRoom) {
         game.currentRoomId = prevRoom.id;
         game.heroPosition = prevRoom.exit;
-        await Promise.all([
-          this.gameService.save(game),
-          this.gameService.save({ ...game, id: 'current' })
-        ]);
+        await this.gameService.saveGameState(game);
 
-        if (logPublisher) {
-          await logPublisher.logGameEvent('ROOM_CHANGED', { heroJson: 'all', newRoom: prevRoom.order });
-        }
+        await logPublisher.logGameEvent('ROOM_CHANGED', { heroJson: 'all', newRoom: prevRoom.order });
 
         return { success: true, position: prevRoom.exit, roomId: prevRoom.id };
       }
@@ -97,14 +80,9 @@ export class HeroService {
 
     // Normal movement within the room
     game.heroPosition = newPosition;
-    await Promise.all([
-      this.gameService.save(game),
-      this.gameService.save({ ...game, id: 'current' })
-    ]);
+    await this.gameService.saveGameState(game);
 
-    if (logPublisher) {
-      await logPublisher.logGameEvent('HERO_MOVED', { heroJson: 'all' });
-    }
+    await logPublisher.logGameEvent('HERO_MOVED', { heroJson: 'all' });
 
     // Check for random encounter
     const encounterRoll = Math.random();
@@ -146,18 +124,13 @@ export class HeroService {
           // Update game with current fight (need to set both ID and object)
           game.currentFightId = fight.id;
           game.currentFight = createdFight;
-          await Promise.all([
-            this.gameService.save(game),
-            this.gameService.save({ ...game, id: 'current' })
-          ]);
+          await this.gameService.saveGameState(game);
 
-          if (logPublisher) {
-            await logPublisher.logGameEvent('ENCOUNTER', {
-              heroJson: 'all',
-              mobId: randomMobTemplate.id,
-              fightId: fight.id
-            });
-          }
+          await logPublisher.logGameEvent('ENCOUNTER', {
+            heroJson: 'all',
+            mobId: randomMobTemplate.id,
+            fightId: fight.id
+          });
 
           return {
             success: true,
@@ -171,9 +144,8 @@ export class HeroService {
           };
         }
       } catch (error) {
-        if (logPublisher) {
-          await logPublisher.logError('ENCOUNTER_CREATION_FAILED', { reason: (error as Error).message });
-        }
+        await logPublisher.logError('ENCOUNTER_CREATION_FAILED', { reason: (error as Error).message });
+
         console.error('Failed to create encounter:', error);
       }
     }

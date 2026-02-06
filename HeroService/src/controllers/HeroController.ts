@@ -20,11 +20,8 @@ export class HeroController {
     app.put('/heroes/:id/healthPointsMax', this.updateHeroHealthPointsMax.bind(this));
     app.put('/heroes/:id/level', this.updateHeroLevel.bind(this));
     app.put('/heroes/:id/attackPoints', this.updateHeroAttackPoints.bind(this));
-    app.post('/heroes/:id/inventory/add', this.addHeroItem.bind(this));
-    app.put('/heroes/:id/inventory', this.addHeroItem.bind(this));
     app.post('/heroes/:id/inventory', this.addHeroItem.bind(this));
     app.post('/heroes/:id/inventory/consume', this.consumeHeroItem.bind(this));
-    app.get('/heroes/:id/inventory', this.getHeroInventory.bind(this));
   }
 
   private getUserIdFromRequest(req: Request): string {
@@ -168,10 +165,11 @@ export class HeroController {
 
   async addHeroItem(req: Request, res: Response) {
     const heroId = req.params.id;
-    const { id, quantity } = req.body;
+    const item = req.body;
+    const quantity = 1;
     try {
       const userId = this.getUserIdFromRequest(req);
-      await this.heroService.addItemToInventory(id, quantity, heroId, userId);
+      await this.heroService.addItemToInventory(item, quantity, heroId, userId);
       const updatedHero = await this.heroService.getById(heroId);
       res.status(200).send(updatedHero);
     } catch (error) {
@@ -200,10 +198,10 @@ export class HeroController {
 
   async consumeHeroItem(req: Request, res: Response) {
     const heroId = req.params.id;
-    const { id } = req.body;
+    const item = req.body;
     try {
       const userId = this.getUserIdFromRequest(req);
-      const updatedHero = await this.heroService.consumeItemFromInventory(id, heroId, userId);
+      const updatedHero = await this.heroService.consumeItemFromInventory(item, heroId, userId);
       res.status(200).send(updatedHero);
     } catch (error) {
       if (error instanceof NotFoundError) {

@@ -1,5 +1,4 @@
 import express from 'express';
-import path from 'path';
 import * as fs from "node:fs";
 import * as YAML from 'yaml';
 import swaggerUi from 'swagger-ui-express';
@@ -7,16 +6,10 @@ import swaggerUi from 'swagger-ui-express';
 import { GameController } from './controllers/GameController';
 import { HeroController } from './controllers/HeroController';
 import { FightController } from './controllers/FightController';
-import { DungeonController } from './controllers/DungeonController';
-import { MobController } from './controllers/MobController';
-import { ItemController } from './controllers/ItemController';
 
 import { GameService } from './services/GameService';
 import { HeroService } from './services/HeroService';
-import { DungeonService } from './services/DungeonService';
 import { FightService } from './services/FightService';
-import { MobService } from './services/MobService';
-import { ItemService } from './services/ItemService';
 
 import { errorHandler } from "./errorHandling";
 import { connectRedis, redisClient } from "./config/redis";
@@ -29,27 +22,18 @@ const swaggerDocument = YAML.parse(file)
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-const dungeonService = new DungeonService();
-const mobService = new MobService();
-const itemService = new ItemService();
 const gameService = new GameService();
 const fightService = new FightService(gameService);
 const heroService = new HeroService(gameService, fightService);
 
 const gameController = new GameController(gameService);
-const heroController = new HeroController(heroService);
 const fightController = new FightController(fightService);
-const dungeonController = new DungeonController(dungeonService);
-const mobController = new MobController(mobService);
-const itemController = new ItemController(itemService);
+const heroController = new HeroController(heroService);
 
 // Register routes
 gameController.registerRoutes(app);
-heroController.registerRoutes(app);
 fightController.registerRoutes(app);
-dungeonController.registerRoutes(app);
-mobController.registerRoutes(app);
-itemController.registerRoutes(app);
+heroController.registerRoutes(app);
 
 // Health check endpoint
 app.get('/health', async (req, res) => {
