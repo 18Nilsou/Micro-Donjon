@@ -16,7 +16,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-const file = fs.readFileSync(require.resolve('./api/hero.yaml'), 'utf8')
+const file = fs.readFileSync(require.resolve('../openapi.yml'), 'utf8')
 const swaggerDocument = YAML.parse(file)
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

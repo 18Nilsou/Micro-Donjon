@@ -1,27 +1,17 @@
 openapi: 3.0.0
 info:
-  title: Hero service API
-  description: Documentation Swagger pour l'API Hero service.
-  version: 0.0.1
+  title: Hero Service API
+  description: Documentation Swagger pour l'API Hero Service
+  version: 1.0.0
 servers:
   - url: http://localhost:3002
 
 paths:
-
   /heroes:
-    get:
-      summary: Liste tous les héros
-      responses:
-        '200':
-          description: Liste des héros
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Hero'
     post:
       summary: Crée un nouveau héros
+      tags:
+        - Heroes
       requestBody:
         required: true
         content:
@@ -35,10 +25,37 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Hero'
+        '500':
+          description: Erreur interne du serveur
+
+  /heroes/user/{userId}:
+    get:
+      summary: Liste tous les héros d'un utilisateur
+      tags:
+        - Heroes
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Liste des héros
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Hero'
+        '500':
+          description: Erreur interne du serveur
 
   /heroes/classes:
     get:
-      summary: Liste toutes les classes de héros
+      summary: Liste toutes les classes de héros disponibles
+      tags:
+        - Heroes
       responses:
         '200':
           description: Liste des classes
@@ -52,9 +69,11 @@ paths:
   /heroes/{id}:
     get:
       summary: Récupère un héros par son ID
+      tags:
+        - Heroes
       parameters:
-        - in: path
-          name: id
+        - name: id
+          in: path
           required: true
           schema:
             type: string
@@ -67,17 +86,38 @@ paths:
                 $ref: '#/components/schemas/Hero'
         '404':
           description: Héros non trouvé
+
+    delete:
+      summary: Supprime un héros
+      tags:
+        - Heroes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Héros supprimé
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                type: object
+                properties:
+                  message:
+                    type: string
+        '404':
+          description: Héros non trouvé
 
   /heroes/{id}/healthPoints:
     put:
       summary: Met à jour les points de vie du héros
+      tags:
+        - Hero Stats
       parameters:
-        - in: path
-          name: id
+        - name: id
+          in: path
           required: true
           schema:
             type: string
@@ -99,17 +139,15 @@ paths:
                 $ref: '#/components/schemas/Hero'
         '404':
           description: Héros non trouvé
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
   /heroes/{id}/healthPointsMax:
     put:
-      summary: Met à jour les points de vie max du héros
+      summary: Met à jour les points de vie maximum du héros
+      tags:
+        - Hero Stats
       parameters:
-        - in: path
-          name: id
+        - name: id
+          in: path
           required: true
           schema:
             type: string
@@ -131,29 +169,18 @@ paths:
                 $ref: '#/components/schemas/Hero'
         '404':
           description: Héros non trouvé
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
   /heroes/{id}/level:
     put:
       summary: Met à jour le niveau du héros
+      tags:
+        - Hero Stats
       parameters:
-        - in: path
-          name: id
+        - name: id
+          in: path
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                level:
-                  type: integer
       responses:
         '200':
           description: Héros mis à jour
@@ -163,17 +190,15 @@ paths:
                 $ref: '#/components/schemas/Hero'
         '404':
           description: Héros non trouvé
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
   /heroes/{id}/attackPoints:
     put:
       summary: Met à jour les points d'attaque du héros
+      tags:
+        - Hero Stats
       parameters:
-        - in: path
-          name: id
+        - name: id
+          in: path
           required: true
           schema:
             type: string
@@ -195,51 +220,15 @@ paths:
                 $ref: '#/components/schemas/Hero'
         '404':
           description: Héros non trouvé
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /heroes/{id}/inventory/add:
-    post:
-      summary: Ajoute un objet à l'inventaire du héros
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                id:
-                  type: string
-                quantity:
-                  type: integer
-      responses:
-        '200':
-          description: Inventaire mis à jour
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Hero'
-        '404':
-          description: Héros non trouvé
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
 
   /heroes/{id}/inventory:
-    put:
+    post:
       summary: Ajoute un objet à l'inventaire du héros
+      tags:
+        - Hero Inventory
       parameters:
-        - in: path
-          name: id
+        - name: id
+          in: path
           required: true
           schema:
             type: string
@@ -251,7 +240,7 @@ paths:
               type: object
               properties:
                 id:
-                  type: string
+                  type: number
                 quantity:
                   type: integer
       responses:
@@ -263,33 +252,36 @@ paths:
                 $ref: '#/components/schemas/Hero'
         '404':
           description: Héros non trouvé
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-    get:
-      summary: Récupère l'inventaire du héros
+
+  /heroes/{id}/inventory/consume:
+    post:
+      summary: Consomme un objet de l'inventaire du héros
+      tags:
+        - Hero Inventory
       parameters:
-        - in: path
-          name: id
+        - name: id
+          in: path
           required: true
           schema:
             type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: number
       responses:
         '200':
-          description: Inventaire du héros
+          description: Objet consommé
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Item'
+                $ref: '#/components/schemas/Hero'
         '404':
-          description: Héros non trouvé
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          description: Héros ou objet non trouvé
 
 components:
   schemas:
@@ -310,20 +302,24 @@ components:
           type: integer
         attackPoints:
           type: integer
+        userId:
+          type: string
         inventory:
           type: array
           items:
             $ref: '#/components/schemas/Item'
+
     CreateHeroRequest:
       type: object
+      required:
+        - name
+        - class
       properties:
         name:
           type: string
         class:
           type: string
-      required:
-        - name
-        - class
+
     Class:
       type: object
       properties:
@@ -333,18 +329,27 @@ components:
           type: integer
         attackPoints:
           type: integer
+
     Item:
       type: object
       properties:
         id:
-          type: string
+          type: number
         name:
           type: string
         quantity:
           type: integer
+        effect:
+          type: string
+        value:
+          type: number
+        rarity:
+          type: string
+        itemType:
+          type: string
+
     Error:
       type: object
       properties:
         error:
           type: string
- 

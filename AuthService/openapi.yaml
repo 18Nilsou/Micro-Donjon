@@ -1,17 +1,15 @@
-openapi: 3.0.3
+openapi: 3.0.0
 info:
   title: Auth Service API
-  description: Authentication service for Micro-Donjon
+  description: API d'authentification et de gestion des utilisateurs
   version: 1.0.0
-
 servers:
   - url: http://localhost:3007
-    description: Local development server
 
 paths:
   /auth/register:
     post:
-      summary: Register a new user
+      summary: Créer un nouveau compte utilisateur
       tags:
         - Authentication
       requestBody:
@@ -22,19 +20,19 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '201':
-          description: User successfully registered
+          description: Compte créé avec succès
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
         '400':
-          description: Bad request
+          description: Données invalides
         '409':
-          description: User already exists
+          description: L'utilisateur existe déjà
 
   /auth/login:
     post:
-      summary: Login user
+      summary: Se connecter à un compte existant
       tags:
         - Authentication
       requestBody:
@@ -45,41 +43,41 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Login successful
+          description: Connexion réussie
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
         '401':
-          description: Invalid credentials
+          description: Identifiants invalides
 
   /auth/me:
     get:
-      summary: Get current user
+      summary: Récupérer les informations de l'utilisateur connecté
       tags:
         - Authentication
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Current user info
+          description: Informations utilisateur
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserPublic'
         '401':
-          description: Unauthorized
+          description: Non authentifié
 
   /auth/verify:
     get:
-      summary: Verify JWT token
+      summary: Vérifier la validité du token JWT
       tags:
         - Authentication
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Token verification result
+          description: Token valide ou invalide
           content:
             application/json:
               schema:
@@ -92,9 +90,9 @@ paths:
 
   /auth/hero:
     put:
-      summary: Link a hero to the current user
+      summary: Lier un héros à l'utilisateur connecté
       tags:
-        - User Hero
+        - User Management
       security:
         - bearerAuth: []
       requestBody:
@@ -106,53 +104,33 @@ paths:
               properties:
                 heroId:
                   type: string
-              required:
-                - heroId
       responses:
         '200':
-          description: Hero linked successfully
+          description: Héros lié avec succès
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserPublic'
         '401':
-          description: Unauthorized
+          description: Non authentifié
+        '404':
+          description: Héros non trouvé
 
     delete:
-      summary: Unlink hero from current user
+      summary: Délier le héros de l'utilisateur connecté
       tags:
-        - User Hero
+        - User Management
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Hero unlinked successfully
+          description: Héros délié avec succès
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserPublic'
         '401':
-          description: Unauthorized
-
-  /health:
-    get:
-      summary: Health check
-      tags:
-        - Health
-      responses:
-        '200':
-          description: Service is healthy
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  service:
-                    type: string
-                  timestamp:
-                    type: string
+          description: Non authentifié
 
 components:
   securitySchemes:
@@ -164,32 +142,40 @@ components:
   schemas:
     RegisterRequest:
       type: object
-      properties:
-        username:
-          type: string
-          minLength: 3
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          minLength: 6
       required:
         - username
         - email
         - password
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
 
     LoginRequest:
       type: object
+      required:
+        - email
+        - password
       properties:
         email:
           type: string
           format: email
         password:
           type: string
-      required:
-        - email
-        - password
+          format: password
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/UserPublic'
+        token:
+          type: string
 
     UserPublic:
       type: object
@@ -200,17 +186,17 @@ components:
           type: string
         email:
           type: string
-        hero_id:
+        heroId:
           type: string
           nullable: true
-        created_at:
+        createdAt:
           type: string
           format: date-time
 
-    AuthResponse:
+    Error:
       type: object
       properties:
-        user:
-          $ref: '#/components/schemas/UserPublic'
-        token:
+        error:
+          type: string
+        message:
           type: string

@@ -23,11 +23,17 @@ paths:
                   $ref: '#/components/schemas/Mob'
         '500':
           description: Internal Server Error
-  /mobs/{uuid}:
+  /mobs/{id}:
     get:
-      summary: Get a mob by uuid
+      summary: Get a mob by id
       tags:
         - Mobs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
       responses:
         '200':
           description: Ok
@@ -42,12 +48,6 @@ paths:
           description: Internal Server Error
         '404':
           description: Not Found
-      parameters:
-        - name: uuid
-          in: path
-          required: true
-          schema:
-            type: string
   /mobs/type/{type}:
     get:
       summary: Get mobs by type
@@ -79,16 +79,22 @@ components:
     Mob:
       type: object
       required:
+        - id
         - name
-        - hp
-        - attack
+        - healthPoints
+        - healthPointsMax
+        - attackPoints
         - type
       properties:
+        id:
+          type: integer
         name:
           type: string
-        hp:
+        healthPoints:
           type: integer
-        attack:
+        healthPointsMax:
+          type: integer
+        attackPoints:
           type: integer
         type:
           type: string

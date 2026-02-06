@@ -1,638 +1,519 @@
 openapi: 3.0.0
 info:
- title: Game Engine API
- description: Service de gestion de la logique de jeu, des déplacements et des combats.
- version: 1.0.0
-
+  title: Game Engine API
+  description: Service de gestion de la logique de jeu, des déplacements et des combats
+  version: 1.0.0
 servers:
   - url: http://localhost:3001
-    description: Serveur local du Game Engine
 
 paths:
- /game:
+  /game/start:
     post:
-     summary: Démarrer une nouvelle partie
-     tags:
-       - Game
-     requestBody:
-       required: true
-       content:
-         application/json:
-           schema:
-             $ref: '#/components/schemas/Game'
-     responses:
-       '201':
-         description: Created
-       '500':
-         description: Internal Server Error
-    put:
-      summary: Mettre à jour l'état de la partie
+      summary: Démarrer une nouvelle partie
       tags:
         - Game
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - hero
+                - dungeon
+              properties:
+                hero:
+                  $ref: '#/components/schemas/Hero'
+                dungeon:
+                  $ref: '#/components/schemas/Dungeon'
       responses:
-        '200':
-          description: Ok
-        '400':
-          description: Bad Request
+        '201':
+          description: Partie créée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
         '500':
-          description: Internal Server Error
+          description: Erreur interne du serveur
+
+  /game:
     get:
       summary: Récupérer l'état actuel de la partie
       tags:
         - Game
       responses:
         '200':
-          description: Ok
+          description: État de la partie
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Game'
         '500':
-          description: Internal Server Error
+          description: Erreur interne du serveur
+
+    put:
+      summary: Mettre à jour l'état de la partie
+      tags:
+        - Game
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Game'
+      responses:
+        '200':
+          description: Partie mise à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '400':
+          description: Données invalides
+        '500':
+          description: Erreur interne du serveur
+
     delete:
       summary: Terminer la partie en cours
       tags:
         - Game
       responses:
         '200':
-          description: Ok
+          description: Partie terminée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
         '500':
-          description: Internal Server Error
- /game/start:
-   post:
-     summary: Cet endpoint doit prendre un heroId et un dungeonId. Il va chercher les stats du héros, générer/charger le donjon, et initialiser le cache redis-game
-     tags:
-       - Game
-     requestBody:
-       required: true
-       content:
-         application/json:
-           schema:
-             type: object
-             properties:
-               heroId:
-                 type: integer
-               dungeonId:  
-                 type: string
-                 format: uuid
-     responses:
-       '201':
-         description: Created
-       '500':
-         description: Internal Server Error
- /hero/{heroId}/move:
-    put:
-     summary: Déplacer un héros à une nouvelle position
-     tags:
-       - Hero
-     parameters:
-       - name: heroId
-         in: path
-         description: ID du héros à déplacer
-         required: true
-         schema:
-           type: integer
-     requestBody:
-       required: true
-       content:
-         application/json:
-           schema:
-             type: object
-             properties:
-               x:
-                 type: integer
-               y:
-                 type: integer
-     responses:
-       '200':
-         description: Ok
-         content:
-           application/json:
-             schema:
-               $ref: '#/components/schemas/Hero'
+          description: Erreur interne du serveur
 
-       '400':
-         description: Bad Request
-       '500':
-         description: Internal Server Error
- /fight:
+  /hero/move:
     post:
-     summary: Initier un combat entre héros et ennemis
-     tags:
-       - Fight
-     responses:
-       '201':
-         description: Created
-         content:
-           application/json:
-             schema:
-               $ref: '#/components/schemas/Fight'
-       '400':
-         description: Bad Request
-       '500':
-         description: Internal Server Error
-     requestBody:
-       required: true
-       content:
-         application/json:
-           schema:
-             $ref: '#/components/schemas/Fight'
+      summary: Déplacer le héros à une nouvelle position
+      tags:
+        - Hero
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dungeon
+                - commonMobs
+                - x
+                - y
+              properties:
+                dungeon:
+                  $ref: '#/components/schemas/Dungeon'
+                commonMobs:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Mob'
+                x:
+                  type: integer
+                y:
+                  type: integer
+      responses:
+        '200':
+          description: Héros déplacé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MoveResponse'
+        '400':
+          description: Mouvement invalide
+        '500':
+          description: Erreur interne du serveur
+
+  /fight:
+    post:
+      summary: Initier un combat
+      tags:
+        - Fight
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fight'
+      responses:
+        '201':
+          description: Combat créé
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fight'
+        '400':
+          description: Données invalides
+        '500':
+          description: Erreur interne du serveur
+
+    get:
+      summary: Récupérer l'état du combat en cours
+      tags:
+        - Fight
+      responses:
+        '200':
+          description: État du combat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fight'
+        '500':
+          description: Erreur interne du serveur
+
     put:
-     summary: Mettre à jour l'état du combat
-     tags:
-       - Fight
-     responses:
-       '200':
-         description: Ok
-         content:
-           application/json:
-             schema:
-               $ref: '#/components/schemas/Fight'
-       '400':
-         description: Bad Request
-       '500':
-         description: Internal Server Error
+      summary: Mettre à jour l'état du combat
+      tags:
+        - Fight
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fight'
+      responses:
+        '200':
+          description: Combat mis à jour
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fight'
+        '400':
+          description: Données invalides
+        '500':
+          description: Erreur interne du serveur
+
     delete:
       summary: Terminer le combat en cours
       tags:
         - Fight
       responses:
         '200':
-          description: Ok
-        '500':
-          description: Internal Server Error
- /dungeon:
-    post:
-      summary: Créer un nouveau donjon
-      tags:
-       - Dungeon
-      requestBody:
-       required: true
-       content:
-         application/json:
-           schema:
-             $ref: '#/components/schemas/Dungeon'
-      responses:
-        '201':
-          description: Created
+          description: Combat terminé
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Dungeon'
+                type: object
+                properties:
+                  message:
+                    type: string
         '500':
-          description: Internal Server Error
-    get:
-     summary: Récupérer l'état actuel du donjon
-     tags:
-       - Dungeon
-     responses:
-       '200':
-         description: Ok
-         content:
-           application/json:
-             schema:
-               $ref: '#/components/schemas/Dungeon'
-       '500':
-         description: Internal Server Error
- /mob/{mobId}:
-    get:
-     summary: Récupérer les détails d'un mob spécifique
-     tags:
-       - Dungeon
-     parameters:
-       - name: mobId
-         in: path
-         description: ID du mob à récupérer
-         required: true
-         schema:
-           type: integer
-     responses:
-       '200':
-         description: Ok
-         content:
-           application/json:
-             schema:
-               $ref: '#/components/schemas/Mob'
-       '404':
-         description: Not Found
-       '500':
-         description: Internal Server Error
-    put:
-     summary: Mettre à jour les informations d'un mob spécifique
-     tags:
-       - Dungeon
-     parameters:
-       - name: mobId
-         in: path
-         description: ID du mob à mettre à jour
-         required: true
-         schema:
-           type: integer
-     requestBody:
-       required: true
-       content:
-         application/json:
-           schema:
-             $ref: '#/components/schemas/Mob'
-     responses:
-       '200':
-         description: Ok
-         content:
-           application/json:
-             schema:
-               $ref: '#/components/schemas/Mob'
-       '404':
-         description: Not Found
-       '500':
-         description: Internal Server Error
-    delete:
-     summary: Supprimer un mob spécifique du donjon
-     tags:
-       - Dungeon
-     parameters:
-       - name: mobId
-         in: path
-         description: ID du mob à supprimer
-         required: true
-         schema:
-           type: integer
-     responses:
-       '200':
-         description: Ok
- /mob:
-    get:
-     summary: Récupérer la liste des ennemis du donjon
-     tags:
-       - Dungeon
-     responses:
-       '200':
-         description: Ok
-         content:
-           application/json:
-             schema:
-               type: array
-               items:
-                 $ref: '#/components/schemas/Mob'
-       '500':
-         description: Internal Server Error
+          description: Erreur interne du serveur
+
+  /fight/{id}/attack:
     post:
-      summary: Ajouter un nouveau mob au donjon
+      summary: Effectuer une attaque dans le combat
       tags:
-       - Dungeon
+        - Fight
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
-       required: true
-       content:  
-         application/json:
-           schema:
-             $ref: '#/components/schemas/Mob'
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hero'
       responses:
-        '201':
-          description: Created
+        '200':
+          description: Attaque effectuée
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Mob'
+                $ref: '#/components/schemas/FightResult'
+        '400':
+          description: Action invalide
+        '401':
+          description: Non authentifié
         '500':
-          description: Internal Server Error
-    delete:
-     summary: Supprimer un mob du donjon
-     tags:
-       - Dungeon
-     requestBody:
-       required: true
-       content:  
-         application/json:
-           schema:
-             $ref: '#/components/schemas/Mob'
-     responses:
-       '200':
-         description: Ok
-       '500':
-         description: Internal Server Error
- /items:
-    get:
-     summary: Récupérer la liste des items disponibles
-     tags:
-       - Item
-     responses:
-       '200':
-         description: Ok
-         content:
-           application/json:
-             schema:
-               type: array
-               items:
-                 $ref: '#/components/schemas/Item'
-       '500':
-         description: Internal Server Error
- /items/{itemId}:
-    get:
-     summary: Récupérer les détails d'un item spécifique
-     tags:
-       - Item
-     parameters:
-       - name: itemId
-         in: path
-         description: ID de l'item à récupérer
-         required: true
-         schema:
-           type: integer
-     responses:
-       '200':
-         description: Ok
-         content:
-           application/json:
-             schema:
-               $ref: '#/components/schemas/Item'
-       '404':
-         description: Not Found
-       '500':
-         description: Internal Server Error
+          description: Erreur interne du serveur
+
+  /fight/{id}/defend:
+    post:
+      summary: Se défendre dans le combat
+      tags:
+        - Fight
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hero'
+      responses:
+        '200':
+          description: Défense effectuée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FightResult'
+        '400':
+          description: Action invalide
+        '401':
+          description: Non authentifié
+        '500':
+          description: Erreur interne du serveur
+
+  /fight/{id}/flee:
+    post:
+      summary: Fuir le combat
+      tags:
+        - Fight
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hero'
+      responses:
+        '200':
+          description: Fuite effectuée
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FightResult'
+        '400':
+          description: Action invalide
+        '500':
+          description: Erreur interne du serveur
 
 components:
- schemas:
-   Game:
-     type: object
-     required:
-       - id
-       - heroId
-       - dungeonId
-       - currentRoomId
-       - status
-     properties:
-       id:
-         type: string
-         format: uuid
-       heroId:
-         type: integer
-       dungeonId:
-         type: string
-         format: uuid
-       currentRoomId:
-         type: string
-         format: uuid
-       heroPosition:
-         $ref: '#/components/schemas/Position'
-       status:
-         type: string
-         enum: [active, paused, completed, failed]
-       startTime:
-         type: string
-         format: date-time
-       lastUpdate:
-         type: string
-         format: date-time
-       score:
-         type: integer
-       mobs:
-         type: array
-         items:
-           type: object
-           properties:
-             mobTypeId:
-               type: integer
-             instanceId:
-               type: string
-               format: uuid
-             position:
-               $ref: '#/components/schemas/Position'
-             hp:
-               type: integer
-             status:
-               type: string
-               enum: [alive, dead]
-       items:
-         type: array
-         items:
-           $ref: '#/components/schemas/Item'
+  schemas:
+    Game:
+      type: object
+      required:
+        - id
+        - heroId
+        - dungeonId
+        - currentRoomId
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        heroId:
+          type: integer
+        dungeonId:
+          type: string
+          format: uuid
+        currentRoomId:
+          type: string
+          format: uuid
+        heroPosition:
+          $ref: '#/components/schemas/Position'
+        status:
+          type: string
+          enum: [active, paused, completed, failed]
+        startTime:
+          type: string
+          format: date-time
+        lastUpdate:
+          type: string
+          format: date-time
+        score:
+          type: integer
 
-   Hero:
-     type: object
-     required:
-       - id
-       - name
-       - healthPoints
-       - healthPointsMax
-       - level
-       - attackPoints
-     properties:
-       id:
-         type: integer
-       name:
-         type: string
-       healthPoints:
-         type: integer
-       healthPointsMax:
-         type: integer
-       level:
-         type: integer
-       attackPoints:
-         type: integer
-       experience:
-         type: integer
-       gold:
-         type: integer
-       inventory:
-         type: array
-         items:
-           $ref: '#/components/schemas/Item'
-       position:
-         $ref: '#/components/schemas/Position'
+    Hero:
+      type: object
+      required:
+        - id
+        - name
+        - healthPoints
+        - healthPointsMax
+        - level
+        - attackPoints
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        healthPoints:
+          type: integer
+        healthPointsMax:
+          type: integer
+        level:
+          type: integer
+        attackPoints:
+          type: integer
+        class:
+          type: object
+        inventory:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
 
-   Mob:
-     type: object
-     required:
-       - id
-       - name
-       - hp
-       - attack
-     properties:
-       id:
-         type: integer
-       name:
-         type: string
-       hp:
-         type: integer
-       hpMax:
-         type: integer
-       attack:
-         type: integer
-       defense:
-         type: integer
-       experience:
-         type: integer
-       position:
-         $ref: '#/components/schemas/Position'
-       status:
-         type: string
-         enum: [alive, dead]
+    Dungeon:
+      type: object
+      required:
+        - id
+        - name
+        - rooms
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/Room'
 
-   Dungeon:
-     type: object
-     required:
-       - id
-       - name
-       - rooms
-     properties:
-       id:
-         type: string
-         format: uuid
-       name:
-         type: string
-       rooms:
-         type: array
-         items:
-           $ref: '#/components/schemas/Room'
-       createdAt:
-         type: string
-         format: date-time
+    Room:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        position:
+          $ref: '#/components/schemas/Position'
+        dimension:
+          type: object
+          properties:
+            width:
+              type: integer
+            height:
+              type: integer
 
-   Fight:
-     type: object
-     required:
-       - id
-       - heroId
-       - mobIds
-       - status
-       - turn
-     properties:
-       id:
-         type: string
-         format: uuid
-       heroId:
-         type: integer
-       mobIds:
-         type: array
-         items:
-           type: integer
-       status:
-         type: string
-         enum: [active, heroWon, heroLost, fled]
-       turn:
-         type: string
-         enum: [hero, mobs]
-       turnNumber:
-         type: integer
-       actions:
-         type: array
-         items:
-           type: object
-           properties:
-             turn:
-               type: integer
-             actor:
-               type: string
-             action:
-               type: string
-             target:
-               type: string
-             damage:
-               type: integer
-             result:
-               type: string
-       startTime:
-         type: string
-         format: date-time
-       endTime:
-         type: string
-         format: date-time
+    Mob:
+      type: object
+      required:
+        - id
+        - name
+        - healthPoints
+        - healthPointsMax
+        - attackPoints
+        - type
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        healthPoints:
+          type: integer
+        healthPointsMax:
+          type: integer
+        attackPoints:
+          type: integer
+        type:
+          type: string
+          enum: [Common, Boss]
 
-   Item:
-     type: object
-     required:
-       - uuid
-       - nom
-       - rarete
-       - type
-     properties:
-       uuid:
-         type: string
-         format: uuid
-       nom:
-         type: string
-       rarete:
-         type: string
-         enum: [Commun, Rare, Epic, Legendaire]
-       type:
-         $ref: '#/components/schemas/ItemType'
-       stats:
-         type: object
-         properties:
-           attack:
-             type: integer
-           defense:
-             type: integer
-           health:
-             type: integer
-       position:
-         $ref: '#/components/schemas/Position'
-       roomId:
-         type: string
-         format: uuid
+    Fight:
+      type: object
+      required:
+        - id
+        - hero
+        - mob
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        hero:
+          $ref: '#/components/schemas/Hero'
+        mob:
+          $ref: '#/components/schemas/Mob'
+        status:
+          type: string
+          enum: [ongoing, victory, defeat, fled]
+        rounds:
+          type: array
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+              result:
+                type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
 
-   ItemType:
-     type: object
-     required:
-       - id
-       - nom
-     properties:
-       id:
-         type: integer
-       nom:
-         type: string
-       description:
-         type: string
-       baseStats:
-         type: object
-         properties:
-           attack:
-             type: integer
-           defense:
-             type: integer
-           health:
-             type: integer
+    FightResult:
+      type: object
+      properties:
+        fight:
+          $ref: '#/components/schemas/Fight'
+        message:
+          type: string
+        status:
+          type: string
 
-   Room:
-     type: object
-     required:
-       - id
-       - dimensions
-       - entrance
-       - exit
-       - order
-     properties:
-       id:
-         type: string
-         format: uuid
-       dimensions:
-         $ref: '#/components/schemas/Dimension'
-       entrance:
-         $ref: '#/components/schemas/Position'
-       exit:
-         $ref: '#/components/schemas/Position'
-       order:
-         type: integer
-       description:
-         type: string
+    MoveResponse:
+      type: object
+      properties:
+        hero:
+          $ref: '#/components/schemas/Hero'
+        fight:
+          $ref: '#/components/schemas/Fight'
+        message:
+          type: string
 
-   Position:
-     type: object
-     required:
-       - x
-       - y
-     properties:
-       x:
-         type: integer
-       y:
-         type: integer
+    Item:
+      type: object
+      required:
+        - id
+        - name
+        - effect
+        - value
+        - rarity
+        - itemType
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        effect:
+          type: string
+          enum: [Attack, Heal, HealthPointMax]
+        value:
+          type: number
+        description:
+          type: string
+        rarity:
+          type: string
+          enum: [Common, Rare, Epic, Legendary]
+        itemType:
+          type: string
+          enum: [Weapon, Consumable, Armor]
 
-   Dimension:
-     type: object
-     required:
-       - width
-       - height
-     properties:
-       width:
-         type: integer
-       height:
-         type: integer
+    Position:
+      type: object
+      properties:
+        x:
+          type: integer
+        y:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

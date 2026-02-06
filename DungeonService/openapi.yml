@@ -1,20 +1,20 @@
 openapi: 3.0.0
 info:
-  title: Dungeon service API
-  description: Documentation Swagger pour l'API Dungeon service.
-  version: 0.0.1
+  title: Dungeon Service API
+  description: API de gestion des donjons
+  version: 1.0.0
 servers:
   - url: http://localhost:3003
 
 paths:
   /dungeons:
     get:
-      summary: Récupère tous les donjons
+      summary: Récupérer tous les donjons
       tags:
         - Dungeons
       responses:
         '200':
-          description: Ok
+          description: Liste des donjons
           content:
             application/json:
               schema:
@@ -22,9 +22,10 @@ paths:
                 items:
                   $ref: '#/components/schemas/Dungeon'
         '500':
-          description: Internal Server Error
+          description: Erreur interne du serveur
+
     post:
-      summary: Génère un nouveau donjon
+      summary: Créer un nouveau donjon
       tags:
         - Dungeons
       requestBody:
@@ -35,21 +36,21 @@ paths:
               $ref: '#/components/schemas/GenerateDungeonRequest'
       responses:
         '201':
-          description: Created
+          description: Donjon créé avec succès
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Dungeon'
         '400':
-          description: Bad Request
+          description: Données invalides
         '500':
-          description: Internal Server Error
+          description: Erreur interne du serveur
 
   /dungeons/{id}:
     get:
-      tags: 
+      summary: Récupérer un donjon par son ID
+      tags:
         - Dungeons
-      summary: Récupère un donjon par son UUID
       parameters:
         - name: id
           in: path
@@ -58,17 +59,17 @@ paths:
             type: string
             format: uuid
       responses:
-        "200":
+        '200':
           description: Détails du donjon
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Dungeon"
+                $ref: '#/components/schemas/Dungeon'
         '404':
-          description: Not Found
+          description: Donjon non trouvé
         '500':
-          description: Internal Server Error
-    
+          description: Erreur interne du serveur
+
 components:
   schemas:
     GenerateDungeonRequest:
@@ -79,70 +80,81 @@ components:
       properties:
         name:
           type: string
-          example: "Dungeon of Doom"
         numberOfRooms:
           type: integer
-          example: 5
+          minimum: 1
+
     Dungeon:
       type: object
       required:
+        - id
         - name
         - rooms
       properties:
         id:
           type: string
           format: uuid
-          example: "a1b2c3d4-e5f6-7g8h-9i10-j11k12l13m14"
         name:
           type: string
-          example: "Dungeon of Doom"
         rooms:
           type: array
           items:
             $ref: '#/components/schemas/Room'
+
     Room:
       type: object
-      required:
-        - id
-        - dimensions
-        - entrance
-        - exit
-        - order
       properties:
         id:
           type: string
           format: uuid
-          example: "r1s2t3u4-v5w6-x7y8-9z10-a11b12c13d14"
+        type:
+          $ref: '#/components/schemas/RoomType'
+        position:
+          $ref: '#/components/schemas/Position'
         dimension:
           $ref: '#/components/schemas/Dimension'
-        entrance:
-          $ref: '#/components/schemas/Position'
-        exit:
-          $ref: '#/components/schemas/Position'
-        order:
-          type: integer
-          example: 1
-    Dimension:
-      type: object
-      required:
-        - width
-        - height
-      properties:
-        width:
-          type: integer
-          example: 10
-        height:
-          type: integer
-          example: 8
+        config:
+          $ref: '#/components/schemas/RoomConfig'
+
+    RoomType:
+      type: string
+      enum:
+        - entrance
+        - corridor
+        - treasure
+        - boss
+        - trap
+
     Position:
       type: object
-      required:
-        - x
-        - y
       properties:
         x:
           type: integer
-          example: 0
         y:
           type: integer
-          example: 2
+
+    Dimension:
+      type: object
+      properties:
+        width:
+          type: integer
+        height:
+          type: integer
+
+    RoomConfig:
+      type: object
+      properties:
+        hasMobs:
+          type: boolean
+        hasItems:
+          type: boolean
+        hasTrap:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string

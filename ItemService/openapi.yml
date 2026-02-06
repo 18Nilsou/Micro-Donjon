@@ -22,28 +22,6 @@ paths:
                   $ref: '#/components/schemas/Item'
         '500':
           description: Erreur interne du serveur
-    post:
-      summary: Créer un nouvel item
-      tags:
-        - Items
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ItemCreate'
-      responses:
-        '201':
-          description: Item créé avec succès
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Item'
-        '400':
-          description: Données invalides
-        '500':
-          description: Erreur interne du serveur
-
   /items/random:
     get:
       summary: Récupérer un item aléatoire
@@ -83,56 +61,9 @@ paths:
           description: Item non trouvé
         '500':
           description: Erreur interne du serveur
-    put:
-      summary: Mettre à jour un item
-      tags:
-        - Items
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: number
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Item'
-      responses:
-        '200':
-          description: Item mis à jour
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Item'
-        '400':
-          description: Données invalides
-        '404':
-          description: Item non trouvé
-        '500':
-          description: Erreur interne du serveur
-    delete:
-      summary: Supprimer un item
-      tags:
-        - Items
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: number
-      responses:
-        '204':
-          description: Item supprimé avec succès
-        '404':
-          description: Item non trouvé
-        '500':
-          description: Erreur interne du serveur
-
+    
 components:
   schemas:
-
     Item:
       type: object
       required: [id, name, effect, value, rarity, itemType]
@@ -176,55 +107,6 @@ components:
         description: "A basic iron sword."
         rarity: "Common"
         itemType: "Weapon"
-
-    ItemCreate:
-      type: object
-      required: [name, effect, value, rarity, itemType]
-      properties:
-        name:
-          type: string
-          description: Nom de l'item.
-        effect:
-          type: string
-          description: Effet principal de l'item.
-          enum: [Attack, Heal, HealthPointMax]
-        value:
-          type: number
-          description: Valeur numérique de l'effet.
-        description:
-          type: string
-          description: Description textuelle de l'item.
-        rarity:
-          type: string
-          description: Rareté de l'item.
-          enum: [Common, Rare, Epic, Legendary]
-        itemType:
-          type: string
-          description: Type d'item.
-          enum: [Weapon, Consumable, Armor]
-      example:
-        name: "Iron Sword"
-        effect: "Attack"
-        value: 10
-        description: "A basic iron sword."
-        rarity: "Common"
-        itemType: "Weapon"
-
-    Error:
-      type: object
-      required: [message]
-      properties:
-        message:
-          type: string
-          description: Message d'erreur.
-          example: "Item not found"
-        code:
-          type: integer
-          description: Code d'erreur HTTP.
-          example: 404
-      example:
-        message: "Item not found"
-        code: 404
 
 tags:
   - name: Items
