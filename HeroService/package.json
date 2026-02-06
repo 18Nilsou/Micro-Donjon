@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "rm -rf dist/ && tsc -p tsconfig.json",
+    "build": "rm -rf dist/ && tsc -p tsconfig.json && cp -r openapi.yml dist/openapi.yml",
     "start": "node dist/src/server.js",
     "lint": "eslint . --ext .ts",
     "test": "jest --coverage"
