@@ -4,7 +4,8 @@ import { NotFoundError } from "../domain/errors/NotFoundError";
 
 jest.mock('../config/logPublisher', () => ({
     logPublisher: {
-        logMobEvent: jest.fn().mockResolvedValue(undefined)
+        logMobEvent: jest.fn().mockResolvedValue(undefined),
+        logError: jest.fn().mockResolvedValue(undefined)
     }
 }));
 
